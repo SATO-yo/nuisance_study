@@ -1,0 +1,588 @@
+---
+title: "Study1 Preliminary analysis without Docker"
+output: 
+  bookdown::html_document2:
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(root.dir = "./")
+source(".Rprofile", encoding = "utf-8")
+set.seed(123)
+
+plot_bar <- function(x, y, ylab) {
+  x %$%  
+  mutate(.,
+    act = fct_recode(
+      act, 
+      実行="DO", 
+      非実行="DONT"
+    ),
+    Mental = fct_recode(
+      Mental, 
+      理解あり="FS", 
+      理解なし="UF", 
+      情報なし="NO"
+    ),
+    Scene = fct_recode(
+      Scene, 
+      扉付近で立ち止まる="std", 
+      隣の席に荷物を置く="bge",
+      リュックを背負う="bag"
+    )
+  ) %>% 
+  ggplot(aes(x = act, y = {{y}}, fill = Mental)) + 
+  stat_summary(
+    fun = "mean", 
+    geom = "bar", 
+    position = position_dodge(0.9), 
+    color = "Black"
+  ) +
+  stat_summary(
+    fun.data = "mean_se", 
+    geom = "errorbar", 
+    alpha = 0.9, 
+    linewidth = 0.7,
+    width = 0.1, 
+    position = position_dodge(0.9)
+  ) +
+  scale_y_continuous(breaks = 1:7, expand = c(0,0)) +
+  coord_cartesian(ylim = c(1,7)) +
+  scale_fill_grey(start = 0.5, end = 1) +
+  theme_classic() +
+  xlab(NULL) +
+  ylab(tategaki_alt(paste0(ylab))) +
+  labs(fill = NULL) +
+  theme(
+    axis.line = element_line(color = "black", lineend = "square"),
+    legend.text = element_text(size = rel(1.2)),
+    axis.text.x = element_text(
+      size = rel(2),
+      margin = margin(t=0.5,r=0,b=0,l=0, "lines")
+    ),
+    axis.text.y = element_text(size = rel(2)),
+    axis.title.y = element_text(
+      size = rel(1.8), angle = 0, vjust = 0.5,
+      margin = margin(t=0,r=0.7,b=0,l=0.3, "lines")
+    ),
+    legend.key=element_rect(fill="transparent", colour="transparent"),
+    plot.background=element_rect(fill="transparent", colour="transparent"),
+    legend.background=element_rect(fill="transparent", colour="transparent"),
+    panel.background=element_rect(fill="transparent", colour="transparent"),
+    plot.margin = margin(t=1,r=0,b=0.3,l=0, "lines")
+  ) +
+  facet_grid(. ~ Scene)
+}
+```
+
+
+# 変数ラベル一覧
+
+データセット内のラベルの内容は以下の通りである。
+
+```{r list of values, echo=FALSE}
+variables <- data.frame(
+  label = c("act","Mental",
+            "emo1","emo2","emo3","emo4","emo5","emo6",
+             "beh1","beh2","beh3","beh4",
+             "prsn1","prsn2","prsn3","prsn4","prsn5","prsn6",
+             "prsn7","prsn8","prsn9","prsn10","prsn11","prsn12","prsn13",
+             "disp1","disp2","disp3","disp4","disp5","disp6","disp7","disp8","disp9",
+             "dist1","dist2","dist3", "age", "gender") %>% 
+    factor(),
+  content = c("1:非実行, 2:実行","FS:理解, UF:無理解, NO:無情報",
+              "気持ちが悪い","気分を害した","強い嫌悪を感じる","軽蔑する","蔑む","情けないと思う",
+               "振る舞いは問題","行動は不適切","したことは良くない","迷惑な行為",
+               "悪いー良い","きらいなーすきな","温かいー冷たい","人の悪いー人のよい","感じのわるいー感じのよい",
+               "いじわるなー親切な","たよりないーしっかりした","不安定なー安定した","知的でないー知的な",
+               "頭の良いー頭の悪い","感覚的なー理知的な","意志が弱いー意志が強い","軽率なー慎重な",
+               "迷惑な人","うっとうしい人","うざったい人","粗雑な人","不注意な人","いい加減な人",
+               "乱暴な人","攻撃的な人","暴力的な人","隣に座られる","自分から挨拶","目が合う", "年齢", "1:male, 2:female") %>% 
+    factor()
+)
+knitr::kable(variables)
+```
+
+
+# シナリオ効果確認
+
+シナリオによる交互作用がなく、シナリオの種類を無視できるのかを確認する。
+
+## まとめ
+
+まず、各変数の合成変数を検討した。シナリオの違いを無視して全データを含めた因子分析を行い、合成変数を作成した。印象評定の項目は「冷たさ」と「能力の低さ」に分割し、それ以外の項目は不快感情・行為の悪質度・否定的特性・社会的距離にまとめた。続いて各変数について、判断対象人物の迷惑への理解の有無×迷惑行為実行の有無×シナリオの種類からなる参加者間要因分散分析を実行した。その結果、シナリオと他の独立変数との交互作用がないことを確認した。この結果に基づき、本研究で用いたシナリオは、その種類の違いを無視できると判断し、以降の分析ではシナリオの種類を無視する。
+
+なお、判断対象人物の理解の有無の情報とシナリオの種類の操作はそれぞれ被験者内ではあるが、ここでのANOVAが完全被験者間要因計画として扱った。その理由は、シナリオの種類の操作がラテン方格に従って行われたためである。3要因の組み合わせからなる各条件間の比較をすると、比較可能などの条件どうしの組み合わせでも、同一回答者のデータではない。そのため、完全被験者間要因計画でANOVAを実施する。
+
+以下では、変数のグループごとにシナリオの種類の影響を検証した。まず、以降の分析を踏まえた各シナリオにおける合成変数の基本的な記述統計量を以下に示す。
+
+```{r Basic-descriptive-statiscits}
+
+# ドア前
+dat_nomiss %>%
+  dplyr::filter(Scene=="std") %>%
+  dplyr::select(-ID,-act,-Mental,-Scene) %>% 
+  dplyr::transmute(
+    理解の程度 = MCfs,
+    不快感情 =  rowMeans(across(emo1:emo6)),
+    行為の悪質度 = rowMeans(across(beh1:beh4)),
+    冷たさ = rowMeans(across(prsn1:prsn6)),
+    能力の低さ = rowMeans(across(c(prsn7:prsn11,prsn13))),
+    否定的特性 = rowMeans(across(disp1:disp9)),
+    社会的距離 = rowMeans(across(dist1:dist3)),
+    年齢 = age
+    ) %>% 
+  psych::describe() %>% 
+  knitr::kable(caption = "ドア前迷惑行為の各合成変数の要約統計量")
+
+# 隣席に荷物
+dat_nomiss %>%
+  dplyr::filter(Scene=="bge") %>%
+  dplyr::select(-ID,-act,-Mental,-Scene) %>% 
+  dplyr::transmute(
+    理解の程度 = MCfs,
+    不快感情 =  rowMeans(across(emo1:emo6)),
+    行為の悪質度 = rowMeans(across(beh1:beh4)),
+    冷たさ = rowMeans(across(prsn1:prsn6)),
+    能力の低さ = rowMeans(across(c(prsn7:prsn11,prsn13))),
+    否定的特性 = rowMeans(across(disp1:disp9)),
+    社会的距離 = rowMeans(across(dist1:dist3)),
+    年齢 = age
+    ) %>% 
+  psych::describe() %>% 
+  knitr::kable(caption = "隣席に荷物を置く行為の各合成変数の要約統計量")
+
+# リュック背負い
+dat_nomiss %>%
+  dplyr::filter(Scene=="bag") %>%
+  dplyr::select(-ID,-act,-Mental,-Scene) %>% 
+  dplyr::transmute(
+    理解の程度 = MCfs,
+    不快感情 =  rowMeans(across(emo1:emo6)),
+    行為の悪質度 = rowMeans(across(beh1:beh4)),
+    冷たさ = rowMeans(across(prsn1:prsn6)),
+    能力の低さ = rowMeans(across(c(prsn7:prsn11,prsn13))),
+    否定的特性 = rowMeans(across(disp1:disp9)),
+    社会的距離 = rowMeans(across(dist1:dist3)),
+    年齢 = age
+    ) %>% 
+  psych::describe() %>% 
+  knitr::kable(caption = "リュック背負いの各合成変数の要約統計量")
+```
+
+## 感情
+
+### Aggregation
+
+平行分析の結果、1因子として解釈するのが妥当だと判断した。
+
+```{r Detarmining-nfactors-Emotion}
+dat_nomiss %>%
+  dplyr::select(emo1,emo2,emo3,emo4,emo5,emo6) %>% {
+    vss(.,fm= "ml", rotate = "geominQ", plot = F) %>% print()
+    fa.parallel(.,fm = "ml", plot = F) %>% return()
+  }
+```
+
+
+```{r Factor-analysis-reliablity-Emotion}
+dat_nomiss %>% 
+  dplyr::select(emo1,emo2,emo3,emo4,emo5,emo6) %>% {
+    fa(.,nfactors = 1, fm = "ml", rotate = "geominQ") %>% print(sort = T)
+    psych::alpha(.)
+    psych::alpha(.) ->> alpha_emo
+  }
+```
+
+1因子での探索的因子分析でも、1因子が妥当だと判断した。また、α係数は`r round(alpha_emo$total$raw_alpha, 2)`と十分に高かった。
+
+合成変数を作成するという観点から、主成分分析を試みても、因子分析と同様に1つにまとめるのが最適だと判断できる。
+
+```{r pca_emo}
+dat_nomiss %>% 
+  dplyr::select(emo1,emo2,emo3,emo4,emo5,emo6) %>% 
+  cor() %>% 
+  psych::principal(nfactors = 6, rotate = "none")
+```
+
+
+### Barplot
+
+各条件の平均値の棒グラフをシナリオごとに以下に示した。
+
+```{r barplot-Emotion}
+plot_SceneEffect_emo <-
+  dat_nomiss %>% 
+  mutate(emo = rowMeans(across(emo1:emo6))) %>%
+  dplyr::select(ID, act, Mental, Scene, emo) %>% 
+  plot_bar(y = emo, ylab = "不快感情の強度")
+
+print(plot_SceneEffect_emo)
+```
+
+
+### ANOVA
+
+シナリオの種類の影響は他の独立変数と交互作用があるとは言えない。そのため、以降の分析ではシナリオの種類を無視する。
+
+```{r ANOVA SceneEffect_emo}
+dat_nomiss %>% 
+  mutate(emo = rowMeans(data.frame(emo1,emo2,emo3,emo4,emo5,emo6))) %>%
+  dplyr::select(ID, act, Mental, Scene, emo) %$%  
+  mutate(.,act = fct_recode(act, 実行="DO", 非実行="DONT")) %$% 
+  mutate(.,Mental = fct_recode(Mental, 理解あり="FS", 理解なし="UF", 情報なし="NO")) %$%
+  mutate(.,Scene = fct_recode(Scene, 
+                              扉付近で立ち止まる="std", 
+                              隣の席に荷物を置く="bge",
+                              リュックを背負う="bag")) %>%  
+  anovakun("ABCs", 2, 3, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+
+## 行動の悪質さ
+
+### Aggregation
+
+平行分析の結果、1因子として解釈するのが妥当だと判断した。
+
+```{r Detarmining nfactors of Behaivior}
+dat_nomiss %>%
+  dplyr::select(beh1,beh2,beh3,beh4) %>% {
+    vss(.,fm= "ml", rotate = "geominQ", plot = F) %>% print()
+    fa.parallel(.,fm = "ml", plot = F) %>% return()
+  }
+```
+
+
+平行分析の結果に基づいて探索的因子分析を行った。
+
+```{r Factor analysis and reliablity test of Bahavior}
+dat_nomiss %>% 
+  dplyr::select(beh1,beh2,beh3,beh4) %>% {
+    fa(.,nfactors = 1, fm = "ml", rotate = "geominQ") %>% print(sort = T)
+    psych::alpha(.) ->> alpha_beh
+  }
+```
+
+1因子での探索的因子分析でも、1因子解が妥当だと判断した。また、α係数は`r round(alpha_beh$total$raw_alpha, 2)`と十分に高かった。
+
+
+```{r pca_beh}
+dat_nomiss %>% 
+  dplyr::select(beh1,beh2,beh3,beh4) %>% 
+  cor() %>% 
+  psych::principal(nfactors = 4, rotate = "none")
+```
+
+主成分分析の結果からも、4項目で1つの合成変数として扱う妥当だと判断した。
+
+
+### Barplot
+
+各条件の平均値の棒グラフをシナリオごとに以下に示した。
+
+```{r barplot_Bahaivor}
+plot_SceneEffect_beh <-
+  dat_nomiss %>% 
+  mutate(beh = rowMeans(across(beh1:beh4))) %>%
+  dplyr::select(ID, act, Mental, Scene, beh) %>% 
+  plot_bar(y = beh, ylab = "行為の悪質度")
+
+print(plot_SceneEffect_beh)
+```
+
+```{r save plot_SceneEffect_beh, include=FALSE, results='hide', eval=FALSE}
+# saving the image
+emf(file = "./output/SceneEffect/plot_SceneEffect_beh.emf", 
+    height = 4, width = 7)
+print(plot_SceneEffect_beh)
+dev.off()
+```
+
+### ANOVA
+
+シナリオの種類の影響は他の独立変数と交互作用があるとは言えない。そのため、以降の分析ではシナリオの種類を無視する。
+
+```{r ANOVA SceneEffect_beh}
+dat_nomiss %>% 
+  mutate(beh = rowMeans(data.frame(beh1,beh2,beh3,beh4))) %>%
+  dplyr::select(ID, act, Mental, Scene, beh) %$%  
+  mutate(.,act = fct_recode(act, 実行="DO", 非実行="DONT")) %$% 
+  mutate(.,Mental = fct_recode(Mental, 理解あり="FS", 理解なし="UF", 情報なし="NO")) %$%
+  mutate(.,Scene = fct_recode(Scene, 
+                              扉付近で立ち止まる="std", 
+                              隣の席に荷物を置く="bge",
+                              リュックを背負う="bag")) %>%  
+  anovakun("ABCs", 2, 3, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+
+## パーソナリティの2次元
+
+### Aggregation
+
+林（1986）の温かさ（個人的望ましさ）と有能さ（社会的望ましさ）の因子構造が成り立っていることを確認するために、確証的因子分析を行った。\
+まず、使用された全項目を投入し、林（1986）と同様の因子構造を検証した。\
+なお、質問紙上での変数のラベルは、逆転項目を除いて数値が低いほどよりポジティブな評価（温かい・有能である）を意味していた。しかし、これら以外の他の変数では数値が高いほどネガティブな評価を意味しているため、パーソナリティ項目もこれらに合わせる。すなわち、パーソナリティ項目の逆転項目以外の得点を逆転化して処理する。この逆転化処理は*"./analysis/study1_nodocker_dataprepare.R"*で実行する。
+
+```{r Comfiramatory FA1 of Personality}
+model1_prsn <- '
+warmth =~ prsn1+prsn2+prsn3+prsn4+prsn5+prsn6
+comp =~ prsn7+prsn8+prsn9+prsn10+prsn11+prsn12+prsn13
+'
+cfa_prsn1 <-
+  dat_nomiss %>% 
+  dplyr::select(prsn1,prsn2,prsn3,prsn4,prsn5,prsn6,prsn7,
+                prsn8,prsn9,prsn10,prsn11,prsn12,prsn13) %>%
+  cfa(model = model1_prsn, data = ., std.lv = T, estimator = "ML")
+
+cfa_prsn1_result <- summary(cfa_prsn1, standardized = T, modindices = F)
+# cfa_prsn1_result
+fitmeasures(
+  cfa_prsn1,fit.measures = c(
+    "CFI", "TLI", "SRMR", "RMSEA.ci.lower",
+    "RMSEA", "rmsea.ci.upper", "AIC", "BIC"
+  )
+)
+```
+
+その結果、有能さ因子に対する「`r variables %>% dplyr::filter(label=="prsn12") %>% dplyr::select(content)`」の因子負荷量が`r round(cfa_prsn1_result$pe$std.all[12], 2)`と低かった。そのため、「`r variables %>% dplyr::filter(label=="prsn12") %>% dplyr::select(content)`」を除外して再度確証的因子分析を行った。
+
+```{r confirmatory FA2 of personality}
+model2_prsn <- '
+warmth =~ prsn1+prsn2+prsn3+prsn4+prsn5+prsn6
+comp =~ prsn7+prsn8+prsn9+prsn10+prsn11+prsn13
+'
+cfa_prsn2 <-
+  dat_nomiss %>% 
+  dplyr::select(prsn1,prsn2,prsn3,prsn4,prsn5,prsn6,prsn7,
+                prsn8,prsn9,prsn10,prsn11,prsn13) %>%
+  cfa(model = model2_prsn, data = ., std.lv = T, estimator = "ML")
+
+cfa_prsn2_result <- summary(cfa_prsn2, standardized = T, modindices = F)
+fitmeasures(
+  cfa_prsn2,fit.measures = c(
+    "CFI", "TLI", "SRMR", "RMSEA.ci.lower",
+    "RMSEA", "rmsea.ci.upper", "AIC", "BIC"
+  )
+)
+```
+
+
+その結果、すべての項目が目的の因子に高い負荷量を示した。また、項目を除外したことで、モデル適合度を表すAICは`r fitmeasures(cfa_prsn1,fit.measures = "AIC")`から`r fitmeasures(cfa_prsn2,fit.measures = "AIC")`に改善された。
+
+```{r Reliablity test of Personality}
+dat_nomiss %>% 
+  dplyr::select(prsn1,prsn2,prsn3,prsn4,prsn5,prsn6) %>% 
+  psych::alpha() -> alpha_cold
+
+dat_nomiss %>% 
+  dplyr::select(prsn7,prsn8,prsn9,prsn10,prsn11,prsn13) %>% 
+  psych::alpha() -> alpha_incomp
+```
+
+冷たさのα係数は`r round(alpha_cold$total$raw_alpha, 2)`、無能さのα係数は`r round(alpha_incomp$total$raw_alpha, 2)`と、それぞれ十分に高かった。
+
+
+### Barplot
+
+シナリオごとの判断対象人物の冷たさと無能さの評定平均値の棒グラフを以下に示す。
+
+```{r Barplot_cold}
+plot_SceneEffect_cold <-
+  dat_nomiss %>% 
+  mutate(warmth = rowMeans(across(prsn1:prsn6))) %>%
+  dplyr::select(ID, act, Mental, Scene, warmth) %>%  
+  plot_bar(y = warmth, ylab = "判断対象の冷たさ")
+
+print(plot_SceneEffect_cold)
+```
+
+
+```{r Barplot_SceneEffect_incomp}
+plot_SceneEffect_incomp <-
+  dat_nomiss %>% 
+  mutate(incomp = rowMeans(across(c(prsn7:prsn11,prsn13)))) %>%
+  dplyr::select(ID, act, Mental, Scene, incomp) %>%  
+  plot_bar(y = incomp, ylab = "判断対象の能力の低さ")
+
+print(plot_SceneEffect_incomp)
+```
+
+
+### ANOVA
+
+冷たさ・無能さともに、シナリオの種類の影響は他の独立変数と交互作用があるとは言えない。そのため、以降の分析ではシナリオの種類を無視する。
+
+```{r ANOVA_SceneEffect_cold}
+dat_nomiss %>% 
+  mutate(cold = rowMeans(data.frame(prsn1,prsn2,prsn3,prsn4,prsn5,prsn6))) %>%
+  dplyr::select(ID, act, Mental, Scene, cold) %$%  
+  mutate(.,act = fct_recode(act, 実行="DO", 非実行="DONT")) %$% 
+  mutate(.,Mental = fct_recode(Mental, 理解あり="FS", 理解なし="UF", 情報なし="NO")) %$%
+  mutate(.,Scene = fct_recode(Scene, 
+                              扉付近で立ち止まる="std", 
+                              隣の席に荷物を置く="bge",
+                              リュックを背負う="bag")) %>%
+  anovakun("ABCs", 2, 3, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+
+```{r ANOVA_SceneEffect_incomp}
+dat_nomiss %>% 
+  mutate(incompetence = rowMeans(data.frame(prsn7,prsn8,prsn9,prsn10,prsn11,prsn13))) %>%
+  dplyr::select(ID, act, Mental, Scene, incompetence) %$%  
+  mutate(.,act = fct_recode(act, 実行="DO", 非実行="DONT")) %$% 
+  mutate(.,Mental = fct_recode(Mental, 理解あり="FS", 理解なし="UF", 情報なし="NO")) %$%
+  mutate(.,Scene = fct_recode(Scene, 
+                              扉付近で立ち止まる="std", 
+                              隣の席に荷物を置く="bge",
+                              リュックを背負う="bag")) %>%
+  anovakun("ABCs", 2, 3, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+
+## 特性評価
+
+### Aggregation
+
+```{r Detarmining nfactors of Disposition}
+dat_nomiss %>% 
+  dplyr::select(disp1,disp2,disp3,disp4,disp5,disp6,disp7,disp8,disp9) %>% {
+    vss(.,fm= "ml", rotate = "geominQ", plot = F) %>% print()
+    fa.parallel(.,fm = "ml", plot = F) %>% return()
+  }
+```
+
+
+並行分析やVSS基準は2因子以上の解を示唆しているが、分析を簡便化させるため、1因子解での探索的因子分析を実行した。その結果、1因子解でもデータへの当てはまりは十分に高いことを確認した。
+
+```{r Factor analysis and reliablity test of Disposition}
+dat_nomiss %>% 
+  dplyr::select(disp1,disp2,disp3,disp4,disp5,disp6,disp7,disp8,disp9) %>% {
+    fa(.,nfactors = 1, fm = "ml", rotate = "geominQ") %>% print(sort = T)
+    dplyr::select(.,disp1,disp2,disp3,disp4,disp5,disp6) %>% 
+      psych::alpha(.) %>% 
+      print(.)
+    dplyr::select(.,disp7,disp8,disp9) %>% 
+      psych::alpha(.) %>% 
+      print(.)
+  }
+```
+
+
+主成分分析の結果からも、1つの合成変数にまとめることに差し支えはないと判断した。
+
+```{r pca_disp}
+dat_nomiss %>% 
+  dplyr::select(disp1,disp2,disp3,disp4,disp5,disp6,disp7,disp8,disp9) %>% {
+    psych::principal(cor(.), nfactors = 9, rotate = "none") %>% print()
+    psych::alpha(.) ->> alpha_disp 
+  }
+```
+
+
+1つの合成性変数として扱うことを考慮した時、これら9項目間のα係数は`r round(alpha_disp$total$raw_alpha, 2)`と十分に高かった。
+
+### Barplot
+
+シナリオごとに、各条件での判断対象人物に対するネガティブな特性評価の平均値を以下に示す。
+
+```{r Barplot}
+plot_SceneEffect_disp <-
+  dat_nomiss %>% 
+  mutate(disp = rowMeans(across(disp1:disp9))) %>%
+  dplyr::select(ID, act, Mental, Scene, disp) %>%  
+  plot_bar(y = disp, ylab = "判断対象への否定的印象")
+
+print(plot_SceneEffect_disp)
+```
+
+
+### ANOVA
+
+シナリオの種類の効果は他の独立変数と交互作用があるとは言えない。そのため、以降の分析ではシナリオの種類を無視する。
+
+```{r ANOVA SceneEffect_disp}
+dat_nomiss %>% 
+  mutate(disp = rowMeans(across(disp1:disp9))) %>%
+  dplyr::select(ID, act, Mental, Scene, disp) %$%  
+  mutate(.,act = fct_recode(act, 実行="DO", 非実行="DONT")) %$% 
+  mutate(.,Mental = fct_recode(Mental, 理解あり="FS", 理解なし="UF", 情報なし="NO")) %$%
+  mutate(.,Scene = fct_recode(Scene, 
+                              扉付近で立ち止まる="std", 
+                              隣の席に荷物を置く="bge",
+                              リュックを背負う="bag")) %>%  
+  anovakun("ABCs", 2, 3, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+
+## 社会的距離
+
+### Aggregation
+
+```{r Detarmining nfactors of dist}
+dat_nomiss %>% 
+  dplyr::select(dist1,dist2,dist3) %>% {
+    vss(.,fm= "ml", rotate = "geominQ", plot = F) %>% print()
+    fa.parallel(.,fm = "ml", plot = F) 
+  }
+```
+
+
+```{r Factor analysis and reliablity test of dist}
+dat_nomiss %>% 
+  dplyr::select(dist1,dist2,dist3) %>% {
+    fa(.,nfactors = 1, fm = "ml", rotate = "geominQ") %>% print(sort = T)
+    psych::alpha(.) ->> alpha_dist
+  }
+```
+
+1因子での探索的因子分析でも、1因子が妥当だと判断した。また、α係数は`r round(alpha_dist$total$raw_alpha, 2)`と十分に高かった。
+
+
+合成変数を作成するという観点から、主成分分析を試みても、因子分析と同様に1つにまとめるのが最適だと判断できる。
+
+```{r pca_dist}
+dat_nomiss %>% 
+  dplyr::select(dist1,dist2,dist3) %>% 
+  cor() %>% 
+  psych::principal(nfactors = 3, rotate = "none")
+```
+
+
+### Barplot
+
+シナリオごとに、各条件での判断対象人物に対する社会的距離の評定平均値を以下に示す。
+
+```{r Barplot_dist}
+plot_SceneEffect_dist <-
+  dat_nomiss %>% 
+  mutate(dist = rowMeans(data.frame(dist1,dist2,dist3))) %>%
+  dplyr::select(ID, act, Mental, Scene, dist) %>%  
+  plot_bar(y = dist, ylab = "判断対象との社会的距離")
+
+print(plot_SceneEffect_dist)
+```
+
+
+### ANOVA
+
+シナリオの種類の効果は他の独立変数と交互作用があるとは言えない。そのため、以降の分析ではシナリオの種類を無視する。
+
+```{r ANOVA_SceneEffect_dist}
+dat_nomiss %>% 
+  mutate(dist = rowMeans(data.frame(dist1,dist2,dist3))) %>%
+  dplyr::select(ID, act, Mental, Scene, dist) %$%  
+  mutate(.,act = fct_recode(act, 実行="DO", 非実行="DONT")) %$% 
+  mutate(.,Mental = fct_recode(Mental, 理解あり="FS", 理解なし="UF", 情報なし="NO")) %$%
+  mutate(.,Scene = fct_recode(Scene, 
+                              扉付近で立ち止まる="std", 
+                              隣の席に荷物を置く="bge",
+                              リュックを背負う="bag")) %>%  
+  anovakun("ABCs", 2, 3, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+

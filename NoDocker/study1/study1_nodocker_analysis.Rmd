@@ -1,0 +1,391 @@
+---
+title: "Study1 Analysis without Docoker"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+output:
+  bookdown::html_document2:
+suppress-bibliography: yes
+---
+
+```{r setup-anlaysis-s1, include=FALSE, results='hide'}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(root.dir = "./")
+source(".Rprofile", encoding = "utf-8")
+set.seed(123)
+```
+
+# 方法
+
+## 実験参加者 {.unnumbered}
+
+```{r AboutData-s1-method, include=FALSE, results='hide'}
+dat_nomiss %>%
+  dplyr::filter(gender == "1" & act == "DO" & Mental == "FS" | gender == "1" & act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_male_participants
+
+dat_nomiss %>%
+  dplyr::filter(gender == "2" & act == "DO" & Mental == "FS" | gender == "2" & act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_female_participants
+
+dat_nomiss %>%
+  dplyr::filter(act == "DO" & Mental == "FS" | act == "DONT" & Mental == "FS") %>%
+  dplyr::select(age) %>%
+  {
+    colMeans(.) ->> mean_age
+    sqrt(var(.) * ((nrow(.) - 1) / nrow(.))) ->> sd_age
+  }
+```
+
+クラウドソーシングサービスのLancers上で募集した、18歳以上の日本国籍保有者250名が同意の上で実験に参加した。このうち，`r num_male_participants+num_female_participants`名を分析に用いた。（男性`r num_male_participants`、女性`r num_female_participants`名）平均年齢（標準偏差）は`r round(mean_age, 2)`歳（`r round(sd_age, 2)`）であった（参加者の選定基準については電子付録を参照のこと）。
+
+## 手続き {.unnumbered}
+
+実験デザインは参加者間要因2水準×参加者内要因3水準であった。参加者間要因は、判断対象人物の迷惑行為実行の有無に関する操作であった。実行条件では、判断対象人物が迷惑行為を行い、迷惑を被った人が発生したというシナリオが3種類呈示された。非実行条件では、判断対象人物が迷惑行為に該当するような行動を中止し、その結果として誰も迷惑を被らなかったというシナリオが3種類呈示された。参加者内要因は、迷惑行為の影響に関する判断対象人物の理解についての3条件の操作であった。これらはそれぞれ、判断対象人物が自身の行動の結果を理解している条件（理解あり条件）、理解していない条件（理解なし条件）、統制条件として判断対象人物の心的状態に何も言及しない条件（情報なし条件）であった。情報なし条件を設定した目的は、迷惑行為をした人物の方がより否定的に評価されるという前提を確認するためである。
+
+各参加者は参加者内要因の操作によって3つの条件に割り当てられたが、これら3条件は3種の異なるシナリオ場面と組み合わされ、この組み合わせはラテン方格に従って行われた ${}^5$。実験参加者は1つのシナリオを読むごとに操作確認の項目に回答し、続いてそのシナリオの内容に関する質問項目群に回答した。これを1セットとし、シナリオ3つ分の合計3セット繰り返した。なお、操作確認の次に内容に関する質問群が呈示されるという順序は保ったまま、各項目の呈示順序はランダム化され、カウンターバランスがとられた。
+
+## 質問項目 {.unnumbered}
+
+```{r cfa-Personality-s1, include=FALSE, results='hide'}
+model1_prsn <- "
+incomp =~ prsn7+prsn8+prsn9+prsn10+prsn11+prsn12+prsn13
+cold =~ prsn1+prsn2+prsn3+prsn4+prsn5+prsn6
+"
+cfa_prsn1 <-
+  dat_nomiss %>%
+  dplyr::select(
+    prsn1, prsn2, prsn3, prsn4, prsn5, prsn6, prsn7,
+    prsn8, prsn9, prsn10, prsn11, prsn12, prsn13
+  ) %>%
+  lavaan::cfa(
+    model = model1_prsn, 
+    data = ., 
+    std.lv = T, 
+    estimator = "ML"
+  )
+
+cfa_prsn1_result <- summary(cfa_prsn1, standardized = T, modindices = F)
+# cfa_prsn1_result
+fit_cfa_1 <-
+  lavaan::fitmeasures(cfa_prsn1, fit.measures = c(
+    "CFI", "TLI", "SRMR", "RMSEA.ci.lower",
+    "RMSEA", "rmsea.ci.upper", "AIC", "BIC"
+  ))
+
+model2_prsn <- "
+incomp =~ prsn7+prsn8+prsn9+prsn10+prsn11+prsn13
+cold =~ prsn1+prsn2+prsn3+prsn4+prsn5+prsn6
+"
+cfa_prsn2 <-
+  dat_nomiss %>%
+  dplyr::select(
+    prsn1, prsn2, prsn3, prsn4, prsn5, prsn6, prsn7,
+    prsn8, prsn9, prsn10, prsn11, prsn13
+  ) %>%
+  lavaan::cfa(
+    model = model2_prsn, 
+    data = ., 
+    std.lv = T, 
+    estimator = "ML"
+  )
+
+cfa_prsn2_result <- summary(cfa_prsn2, standardized = T, modindices = F)
+fit_cfa_2 <-
+  lavaan::fitmeasures(cfa_prsn2, fit.measures = c(
+    "CFI", "TLI", "SRMR", "RMSEA.ci.lower",
+    "RMSEA", "rmsea.ci.upper", "AIC", "BIC"
+  ))
+```
+
+```{r items-alpha-s1, include=FALSE, results='hide'}
+alpha_cold <- 
+  dat_nomiss %>% 
+  dplyr::select(prsn1, prsn2, prsn3, prsn4, prsn5, prsn6) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_incomp <-
+  dat_nomiss %>% 
+  dplyr::select(prsn7, prsn8, prsn9, prsn10, prsn11, prsn13) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+```
+
+**操作確認**　迷惑に関する理解の有無の操作確認として、参加者はシナリオ内の判断対象人物が自身の行動がどのような結果につながるのかを正確に予想していたと思う程度を７件法で回答した（1＝予想していなかった、4＝どちらともいえない、7＝予想していた）。また、迷惑行為の実行の操作確認として、実験参加者はシナリオ内で迷惑行為として描写されている行動を判断対象人物が実際に実行したか否かを、「実行しなかった」「実行した」の２件法で回答した。
+
+**判断対象人物への印象**　@hayashi1978twodimensions を援用し、判断対象人物の冷たさの指標として6項目（「良い－悪い」「つめたい－あたたかい」など）、および能力の低さの指標として7項目の特性語の組み合わせを使用した（「たよりない－しっかりした」「知的でない－知的な」など）。これら13項目に関して確証的因子分析を行った結果、「能力の低さ」因子に対する「意思が弱い―意思が強い」の因子負荷量が `r subnum(cfa_prsn1_result$pe$std.all[6], digits = 2, eql = F)` と低かったため、この項目を除外した能力の低さ6項目（クロンバックの $\alpha$ = `r alpha_incomp`）と人物の冷たさ6項目（$\alpha$ = `r alpha_cold`）を尺度として用いた。参加者はそれぞれの対になった特性語のどちらが判断対象人物により当てはまるかを1から7で回答した。
+
+これら以外に、探索的な質問項目を設けた。探索的な質問項目の内容と、その分析結果については、電子付録に記載した。
+
+
+# 結果
+
+```{r list-of-values-s1, include=FALSE, results='hide'}
+values <- data.frame(
+  label = c(
+    "act", "Mental",
+    "emo1", "emo2", "emo3", "emo4", "emo5", "emo6",
+    "beh1", "beh2", "beh3", "beh4",
+    "prsn1", "prsn2", "prsn3", "prsn4", "prsn5", "prsn6",
+    "prsn7", "prsn8", "prsn9", "prsn10", "prsn11", "prsn12", "prsn13",
+    "disp1", "disp2", "disp3", "disp4", "disp5", "disp6", "disp7", "disp8", "disp9",
+    "dist1", "dist2", "dist3", "age", "gender"
+  ) %>%
+    factor(),
+  content = c(
+    "1:非実行, 2:実行", "FS:理解, UF:無理解, NO:無情報",
+    "気持ちが悪い", "気分を害した", "強い嫌悪を感じる", "軽蔑する", "蔑む", "情けないと思う",
+    "振る舞いは問題", "行動は不適切", "したことは良くない", "迷惑な行為",
+    "悪いー良い", "きらいなーすきな", "温かいー冷たい", "人の悪いー人のよい", "感じのわるいー感じのよい",
+    "いじわるなー親切な", "たよりないーしっかりした", "不安定なー安定した", "知的でないー知的な",
+    "頭の良いー頭の悪い", "感覚的なー理知的な", "意志が弱いー意志が強い", "軽率なー慎重な",
+    "迷惑な人", "うっとうしい人", "うざったい人", "粗雑な人", "不注意な人", "いい加減な人",
+    "乱暴な人", "攻撃的な人", "暴力的な人", "隣に座られる", "自分から挨拶", "目が合う", "年齢", "1:male, 2:female"
+  ) %>%
+    factor()
+)
+```
+
+条件ごとの各従属変数の平均と標準偏差を Table \@ref(tab:make-sum-table-s1) に示す。
+
+```{r make-sum-table-s1, cache=FALSE, message=FALSE, error=FALSE, warning=FALSE}
+sumtbl_DO <-
+  dat_combined_nomiss %>%
+  dplyr::filter(act == "DO") %>%
+  dplyr::select(Mental, MCfs, cold, incomp) %>%
+  dplyr::rename(
+    理解の程度 = MCfs,
+    冷たさ = cold,
+    能力の低さ = incomp
+  ) %>%
+  gtsummary::tbl_summary(
+    by = Mental,
+    type = 理解の程度 ~ "continuous",
+    statistic = all_continuous() ~ "{mean} ({sd})"
+  )
+
+sumtbl_DONT <-
+  dat_combined_nomiss %>%
+  dplyr::filter(act == "DONT") %>%
+  dplyr::select(Mental, MCfs, cold, incomp) %>%
+  dplyr::rename(
+    理解の程度 = MCfs,
+    冷たさ = cold,
+    能力の低さ = incomp
+  ) %>%
+  gtsummary::tbl_summary(
+    by = Mental,
+    type = 理解の程度 ~ "continuous",
+    statistic = all_continuous() ~ "{mean} ({sd})"
+  )
+
+tbl_merge(tbls = list(sumtbl_DO, sumtbl_DONT)) %>%
+  modify_header(
+    label ~ " ",
+    stat_1_1 ~ "dofs",
+    stat_2_1 ~ "douf",
+    stat_3_1 ~ "dono",
+    stat_1_2 ~ "dontfs",
+    stat_2_2 ~ "dontuf",
+    stat_3_2 ~ "dontno"
+  ) %>%
+  modify_footnote(update = everything() ~ NA) %>%
+  tibble::as_tibble() %>%
+  flextable::flextable() %>%
+  flextable::colformat_num(digits = 2) %>%
+  flextable::set_caption("判断対象人物に対する条件ごとの判断結果") %>%
+  flextable::set_header_labels(
+    dofs = "理解あり",
+    douf = "理解なし",
+    dono = "情報なし",
+    dontfs = "理解あり",
+    dontuf = "理解なし",
+    dontno = "情報なし"
+  ) %>%
+  flextable::add_header_row(
+    top = T,
+    values = c(" ", "実行", "非実行"),
+    colwidths = c(1, 3, 3)
+  ) %>%
+  flextable::align(i = 1:2, j = 1:7, align = "center", part = "header") %>%
+  flextable::align(j = 1:7, align = "center", part = "body") %>%
+  flextable::border_remove() %>%
+  flextable::hline_top(
+  part = "header",
+  border = officer::fp_border(width = 2)
+  ) %>%
+  flextable::vline(
+  part = "all", j = 4,
+  border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::hline(
+  part = "header",
+  i = 2,
+  j = 1:7,
+  border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::hline(
+  part = "body",
+  i = 3,
+  border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::width(width = 0.75) %>%
+  flextable::width(j = 1, width = 1) %>% 
+  flextable::add_footer_lines(values = "") %>%
+  flextable::compose(
+  i = 1,
+  value = flextable::as_paragraph(
+    flextable::as_i("Note. "),
+    "数値は平均値（標準偏差）。"
+  ),
+  part = "footer"
+  )
+```
+
+```{r anova-s1, include=FALSE, results='hide', cache=FALSE}
+anova_rep <-  
+  dat_combined_nomiss %>% 
+  anovakun_main(
+    id = "ID",
+    iv_b = "act", 
+    iv_w = "Mental", 
+    dv = c("MCfs", "cold", "incomp"),
+    design = "AsB",
+    fac_levels = c(2, 3),
+    eta_g = TRUE, 
+    eta_p = FALSE,
+    besci = TRUE,
+    nesci = TRUE,
+    intr1 = "act",
+    intr2 = "Mental"
+  )
+```
+
+## 操作確認 {.unnumbered}
+
+```{r t-test-mcfs-s1}
+t_test_mcfs_DO <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(Mental %in% c("FS", "UF") & act == "DO") %>% 
+  t.test(MCfs ~ Mental, data = ., paired = TRUE, var.equal = FALSE) %>% 
+  papaja::apa_print() %>% 
+  .$full_result
+
+t_test_mcfs_DONT <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(Mental %in% c("FS", "UF") & act == "DONT") %>% 
+  t.test(MCfs ~ Mental, data = ., paired = TRUE, var.equal = FALSE) %>% 
+  papaja::apa_print() %>% 
+  .$full_result
+```
+
+判断対象人物の迷惑に関する理解の有無の操作確認のため、自身の行動の結果に対する判断対象人物の理解の程度の推測値に関して、2要因混合分散分析を行った。その結果、要因間の有意な交互作用が検出されたものの（`r anova_rep[["MCfs"]][["intr"]][["report"]]`）、実行条件・非実行条件のいずれでも、理解なし条件の判断対象人物の方が理解あり条件の人物よりも有意に迷惑を理解していなかったと評価されたことが確認された（実行条件：`r t_test_mcfs_DO`; 非実行条件：`r t_test_mcfs_DONT`）。このことから、判断対象人物の迷惑への理解に関する操作が意図した通りに機能したと判断した。
+
+
+## 印象評定 {.unnumbered}
+
+```{r t-test-cold-s1}
+t_test_cold_dont <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DONT" & Mental %in% c("FS", "UF")) %>% 
+  t.test(
+    cold ~ Mental, data = ., paired = TRUE, var.equal = FALSE, 
+    conf.level = (0.95)
+  ) %>% 
+  papaja::apa_print()
+```
+
+```{r t-test-incomp-s1}
+t_test_incomp_do <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DO" & Mental %in% c("FS", "UF")) %>% 
+  dplyr::arrange(act, Mental, ID) %>% 
+  t.test(
+    incomp ~ Mental, data = ., paired = TRUE, var.equal = FALSE, 
+    conf.level = 0.95
+  ) %>% 
+  papaja:::apa_print()
+  
+t_test_incomp_dont <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DONT" & Mental %in% c("FS", "UF")) %>% 
+  dplyr::arrange(act, Mental, ID) %>% 
+  t.test(
+    incomp ~ Mental, data = ., paired = TRUE, var.equal = FALSE, 
+    conf.level = 0.95
+  ) %>% 
+  papaja::apa_print()
+```
+
+```{r means-cold-s1}
+m_cold_do_no <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DO" & Mental == "NO") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+m_cold_dont_no <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DONT" & Mental == "NO") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_cold_do_fs <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DO" & Mental == "FS") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+m_cold_dont_fs <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DONT" & Mental == "FS") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_cold_do_uf <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DO" & Mental == "UF") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+m_cold_dont_uf <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DONT" & Mental == "UF") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+```
+
+
+始めに仮説1を検証した。判断対象人物を冷たいと評価する程度に関して、2要因混合分散分析を行ったところ、交互作用が有意であった（`r anova_rep[["cold"]][["intr"]][["report"]]`）。単純主効果検定の結果、情報なし条件において、迷惑行為者（*M* = `r m_cold_do_no`）の方が非実行者（*M* = `r m_cold_dont_no`）よりも冷たいと評価されており（`r anova_rep[["cold"]][["smplmain"]][["act"]][["at NO"]][["report"]]`）、迷惑行為を実行しなければ、より温かいと評価されるという前提が満たされていることが確認された。さらに迷惑行為を実行しないことがもたらすこの効果は、判断対象人物の迷惑への理解の有無に調整されていた。すなわち、迷惑を理解している人物が迷惑行為を中断することで、冷たいという評価が減少する効果と比較して（*M* = `r m_cold_do_fs` vs. *M* = `r m_cold_dont_fs`, `r anova_rep[["cold"]][["smplmain"]][["act"]][["at FS"]][["report"]]`）迷惑を理解していない人物が迷惑行為を実行しなかった場合には、冷たさの評価の減少量は小さかった（*M* = `r m_cold_do_uf` vs. *M* = `r m_cold_dont_uf`,`r anova_rep[["cold"]][["smplmain"]][["act"]][["at UF"]][["report"]]`）。これに加え、非実行条件における迷惑への理解の状態の単純主効果も有意であったことから（`r anova_rep[["cold"]][["smplmain"]][["Mental"]][["at DONT"]][["report"]]`）、理解の有無の間で比較を行った。その結果、迷惑行為をせずとも、迷惑を理解していない人物は理解している人物よりも有意に冷たいと評価されていた（`r t_test_cold_dont[["full_result"]]`）。これは、たとえ迷惑行為を実行しなかったとしても、無神経であることによって、その人物は冷たいと評価されることを免れないこと意味している。これらの結果から、仮説1は支持された。
+
+
+```{r mean-incompetence-s1}
+m_incomp_do_fs <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DO" & Mental == "FS") %>% 
+  dplyr::summarise(mean = mean(incomp)) %>% 
+  sprintf(fmt = '%.2f')
+m_incomp_do_uf <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DO" & Mental == "UF") %>% 
+  dplyr::summarise(mean = mean(incomp)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_incomp_dont_fs <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DONT" & Mental == "FS") %>% 
+  dplyr::summarise(mean = mean(incomp)) %>% 
+  sprintf(fmt = '%.2f')
+m_incomp_dont_uf <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DONT" & Mental == "UF") %>% 
+  dplyr::summarise(mean = mean(incomp)) %>% 
+  sprintf(fmt = '%.2f')
+```
+
+
+続いて仮説2を検証するため、判断対象人物に対する能力評価に関する2要因混合分散分析を行った。その結果、交互作用が有意であった（`r anova_rep[["incomp"]][["intr"]][["report"]]`）。実行条件でも非実行条件でも、迷惑への理解の有無の単純主効果が有意であったため（実行条件：`r anova_rep[["incomp"]][["smplmain"]][["Mental"]][["at DO"]][["report"]]`; 非実行条件：`r anova_rep[["incomp"]][["smplmain"]][["Mental"]][["at DONT"]][["report"]]`）、実行の有無別に理解あり条件と理解なし条件の比較を行った。その結果、実行条件でも非実行条件でも、理解なし条件の人物は理解あり条件よりも能力を有意に低く評価されていた（実行条件：*M* = `r m_incomp_do_fs` vs. *M* = `r m_incomp_do_uf`, `r t_test_incomp_do$full_result`; 非実行条件：*M* = `r m_incomp_dont_fs` vs. *M* = `r m_incomp_dont_uf`, `r t_test_incomp_dont$full_result`）。これらの結果から、迷惑行為の有無にかかわらず、迷惑を理解していない人物は理解している場合よりも能力が低いと評価されることが明らかとなり、仮説2は支持された。 
+
+
