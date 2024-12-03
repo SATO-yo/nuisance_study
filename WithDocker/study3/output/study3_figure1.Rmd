@@ -1,0 +1,26 @@
+---
+title: "Study3 Figure 1"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+output:
+  bookdown::word_document2:
+    # reference_docx: "/home/rstudio/NuisanceStudy/reference/document_template.docx"
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/JJP_template.docx"
+  bookdown::html_document2:
+suppress-bibliography: yes
+---
+
+```{r setup-s3-figure1, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+source("/home/rstudio/NuisanceStudy/study3/.Rprofile", encoding = "utf-8")
+set.seed(123)
+```
+
+```{r med-act-s3, fig.cap="迷惑行為者への態度形成に至る調整媒介過程", eval=TRUE}
+include_graphics("/home/rstudio/NuisanceStudy/study3/output/study3_med_combined_act.png", error = FALSE)
+```
+
+注）Aは，判断対象人物が迷惑行為を実行することで社会的距離を増大させる過程で，人物の冷たさと将来の迷惑行為の予測を媒介する媒介モデルの推定結果を表す。Bは，非難に対する同様の媒介過程の推定結果を表す。各パス係数は標準化偏回帰係数を表す。また，迷惑行為実行から社会的距離および非難に直接伸びるパスに付与された数値うち，括弧で囲われた数値は迷惑行為実行の直接効果の大きさを表し，括弧で囲われていないものは総合効果の大きさを表す。いずれのモデルでも迷惑行為を実行したことの直接効果および従属変数への総合効果は，その人物の迷惑への理解の有無によって調整されていた。
+
+$\ast$ *p* \< .05.

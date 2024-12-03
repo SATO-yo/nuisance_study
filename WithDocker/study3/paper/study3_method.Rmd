@@ -1,0 +1,136 @@
+---
+title: "Study3 Method"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+output:
+  bookdown::html_document2: default
+  bookdown::word_document2:
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/document_template.docx"
+suppress-bibliography: yes
+# bibliography: "/home/rstudio/NuisanceStudy/reference/references.bib"
+# csl: "/home/rstudio/NuisanceStudy/reference/apa.csl"
+---
+
+```{r setup-method-s3, include=FALSE, results='hide'}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(root.dir = "/home/rstudio/NuisanceStudy/study3/paper/")
+source("/home/rstudio/NuisanceStudy/study3/.Rprofile", encoding = "utf-8")
+```
+
+
+```{r AboutData-s3-method, include=FALSE, results='hide'}
+num_male_participants <-
+  dat_nomiss_noscene_combined %>%
+  dplyr::filter(gender == "1") %>%
+  nrow() 
+
+num_female_participants <-
+  dat_nomiss_noscene_combined %>%
+  dplyr::filter(gender == "2") %>%
+  nrow()
+
+num_DO_participants_nomiss <-
+  dat_nomiss_noscene_combined %>%
+  dplyr::filter(act == "DO") %>%
+  nrow()
+
+num_DONT_participants_nomiss <-
+  dat_nomiss_noscene_combined %>%
+  dplyr::filter(act == "DONT") %>%
+  nrow()
+
+num_DO_participants_all <-
+  dat_noscene_combined %>% 
+  dplyr::filter(act == "DO") %>% 
+  nrow()
+
+num_DONT_participants_all <-
+  dat_noscene_combined %>% 
+  dplyr::filter(act == "DONT") %>% 
+  nrow()
+
+dat_nomiss_noscene_combined %>%
+  dplyr::select(age) %>%
+  {
+    colMeans(.) ->> mean_age
+    sqrt(var(.) * ((nrow(.) - 1) / nrow(.))) ->> sd_age
+  }
+
+```
+
+**参加者**　クラウドソーシングサービスのLancers上で募集した，18歳以上の日本国籍保有者400名が同意の上で実験に参加した。このうち，分析に使用した有効回答者数は`r nrow(dat_nomiss_noscene_combined)`名（男性`r num_male_participants`名，女性`r num_female_participants`名，その他`r nrow(dat_nomiss_noscene_combined) - num_male_participants - num_female_participants`名）だった。平均年齢（標準偏差）は`r sprintf(mean_age, fmt = '%.2f')`歳（`r sprintf(sd_age, fmt = '%.2f')`）だった。有効回答者の選定方法は電子付録に記載した。これまでの研究と同様に，同一IPアドレスからの3回目以降の回答は除外対象としたが，これに該当する回答は存在しなかった。また，シナリオ内で判断対象人物が実際に迷惑行為を実行したかどうかの操作確認の質問に対して，一度でも不正確な回答をした参加者は分析から除外した。この操作確認の正答率は，迷惑行為実行条件で`r sprintf(num_DO_participants_nomiss/num_DO_participants_all*100, fmt = '%.2f')`％（`r num_DO_participants_nomiss`/`r num_DO_participants_all`名），非実行条件で`r sprintf(num_DONT_participants_nomiss/num_DONT_participants_all*100, fmt = '%.2f')`％（`r num_DONT_participants_nomiss`/`r num_DONT_participants_all`名）であった。
+
+
+```{r alpha-s3, include=FALSE, results='hide'}
+alpha_cold <-
+  dat_nomiss_noscene %>% 
+  dplyr::select(prsn1,prsn2,prsn5,prsn6) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_incomp <-
+  dat_nomiss_noscene %>% 
+  dplyr::select(prsn3,prsn4,prsn7,prsn8) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_uh <-
+  dat_nomiss_noscene %>% 
+  dplyr::transmute(
+    deh1 = deh1,
+    deh2 = deh2,
+    deh3 = -deh3,
+    deh4 = -deh4
+  ) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  abs() %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_fore <-
+  dat_nomiss_noscene %>% 
+  dplyr::select(fore1:fore4) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_blm <-
+  dat_nomiss_noscene %>% 
+  dplyr::select(blm1:blm3) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_dist <-
+  dat_nomiss_noscene %>% 
+  dplyr::select(dist1:dist3) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+```
+
+**質問項目**　人物への印象の測定項目を研究1のものから修正し，冷たさの次元（$\alpha$ = `r alpha_cold`）では @hayashi1978twodimensions の「いじわるな－親切な」「人の悪い－人の良い」に「乱暴な－優しい」「攻撃的な－おとなしい」を加えた。能力の低さの次元（$\alpha$ = `r alpha_incomp`）では， @hayashi1978twodimensions の「知的でない－知的な」に，「無能な－有能な」「不注意な－注意深い」「いい加減な－丁寧な」を加えた。参加者は研究1と同様に，それぞれ対になった特性語のどちらが判断対象人物により当てはまるかを1から7で回答した。
+
+非人間化の指標については，多数の特性語について「動物と比較した際に人間にのみ当てはまる程度」（Uniquely Human: UH，1 = 動物にも人間にも当てはまる，7 = 人間にのみ当てはまる），「機械と比較した際に人間にのみ当てはまる程度」（Human Nature: HN，1 = 機械にも人間にも当てはまる，7 = 人間にのみ当てはまる），「望ましさ」（1 = 全く望ましくない，7 = 非常に望ましい）の3つの側面について評定を得た先行研究 [@sharma2021empiricalstudy] の結果をもとに，そのリストから4個の特性語を選定した。これらは「従順な（UH-低・HN-低）」「のんきな（UH-低・HN-高）」「几帳面な（UH-高・HN-低）」「よくしゃべる（UH-高・HN-高）」であった。ここでの「高」とは，先述の先行研究においてUH，HNそれぞれの平均評定値が4.50以上であったものを，「低」とは平均値3.00以下であったものを指す。他方「望ましさ」においては，どの特性語も中程度（3.00－5.00点）で偏りがないことを，選定の条件とした。参加者は各特性語が判断対象人物に当てはまる程度を7件法で回答した（1 = 全く当てはまらない，7 = 非常によく当てはまる，$\alpha$ = `r alpha_uh`）。これら4個の特性語を用いて，判断対象人物が人間であるよりも動物に近いという形で非人間化される程度の尺度得点を求めるためには，動物的であることを表すUHの低い「従順な（UH-低・HN-低）」「のんきな（UH-低・HN-高）」が当てはまる程度の平均値から，動物との対比において人間的であることを表すUHの高い「几帳面な（UH-高・HN-低）」「よくしゃべる（UH-高・HN-高）」が当てはまる程度の平均値を引いた値を用いる。この差得点が正の方向に大きな値をとるほど，判断対象人物をより動物的に非人間化していることを意味する。この方法でUHの尺度得点を算出することで，判断対象人物のHNに基づく判断が交絡することを防ぐことを意図した。
+
+また，判断対象人物の将来の行動に関する予測を検討するため，シナリオで題材にした迷惑行為とは別の4つの迷惑行為を，判断対象人物が今後実行する可能性について評価するように求めた。ここで予測することを求めた別の迷惑行為は，@yoshida1999meiwaku1 によって挙げられた迷惑行為群のうちから，「ガムを路上に吐き捨てる」，「指定場所以外での自転車の駐輪」，「狭い通路ですれ違う際に道を譲らない」，「電車内で他人の足を踏んで気づかないふりをする」の4つを使用した。参加者は，シナリオ中の場面の次の日に判断対象人物がこれら4つの行為を行う可能性をそれぞれ7件法で回答した（1 = 絶対に行わない，7 = 必ず行う，$\alpha$ = `r alpha_fore`）。
+
+さらに，判断対象人物への態度として，その人物に対する社会的距離と非難の程度を回答するように求めた。社会的距離の測定項目はそれぞれ，「電車内でその人が隣に座ってきても嫌ではない」，「知り合いだった場合，自分からこの人に挨拶する」，「この人と目を合わせても平気だ」であった（$\alpha$ = `r alpha_dist`）。参加者はこれら3項目の内容を判断対象人物に対してどの程度思っているかを7件法で回答した（1 = 全くそう思わない，7 = 強くそう思う）。非難についても3項目に7件法で回答するように求めた。各項目はそれぞれ，「判断対象人物が行ったことに関して，あなたは判断対象人物をどの程度非難しますか」（1 = 全く非難しない，7 = 非常に強く非難する），「判断対象人物が行ったことに関して，判断対象人物は咎められるべきだとあなたは思いますか」（1 = 全くそうは思わない，7 = 強くそう思う），「あなたは，判断対象人物が今後不幸に見舞われてしかるべきだと思いますか」（1 = 全くそうは思わない，7 = 強くそう思う）であった（$\alpha$ = `r alpha_blm`）。
+
+操作確認については，研究1と同一のものを使用した。
+
+
+**手続き**　研究2では，判断対象人物の迷惑に関する理解の有無を参加者間要因として操作した。また，迷惑に関する理解の有無の操作を理解あり条件と理解なし条件の2水準に変更した。したがって，今回の実験では2（判断対象人物の迷惑行為実行の有無）× 2（判断対象人物の迷惑に関する理解の有無）の参加者間要因計画の実験デザインとした。
+
+参加者は，判断対象人物の迷惑行為実行の有無と，迷惑に関する理解の有無の組み合わせからなる4つの実験条件のいずれか1つに，ランダムで割り当てられた。各実験条件において，参加者には3種類のシナリオ場面が呈示された。使用したシナリオ場面はこれまでの実験で使用したものと同一である。参加者は，シナリオを1つ読むごとに判断対象人物に関する行動予測，非難，非人間化の質問に回答した。続いて，残りの質問項目，最後に操作確認の質問項目に回答した。これを1セットとし，全3セットをランダムな順に繰り返した。
+
+**倫理的配慮**　本研究は，著者らの所属する機関の研究倫理委員会の承認を得て実施された。

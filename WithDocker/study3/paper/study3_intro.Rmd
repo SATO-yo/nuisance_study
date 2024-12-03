@@ -1,0 +1,15 @@
+---
+title: "Study3 Introduction"
+output:
+  bookdown::html_document2: default
+  bookdown::word_document2: 
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/document_template.docx"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+suppress-bibliography: yes
+# bibliography: "/home/rstudio/NuisanceStudy/reference/references.bib"
+# csl: "/home/rstudio/NuisanceStudy/reference/apa.csl"
+---
+
+研究2では，対人認知の基本次元による対人評価に加え，動物的非人間化，判断対象人物についての予測と対処に関する検討も行う。検証する仮説は仮説1と2に加えて3から5である。これにより，無神経であること自体に基づく否定的な人物評価を明らかにするにとどまらず，実際に人々が無神経な他者に対してどのように対応するのかを明らかにすることを試みる。
