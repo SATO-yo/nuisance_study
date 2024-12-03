@@ -1,0 +1,119 @@
+---
+title: "Study3 Table 1"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+output:
+  bookdown::html_document2:
+suppress-bibliography: yes
+---
+
+```{r setup-s3-table1, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+source("./.Rprofile", encoding = "utf-8")
+set.seed(123)
+```
+
+```{r make-sum-table-s3-1, cache=FALSE, message=FALSE, error=FALSE, warning=FALSE}
+sumtbl_DO <-
+  dat_nomiss_noscene_combined %>%
+  dplyr::filter(act == "DO") %>%
+  select(Mental, MCfs, cold, incomp,deh, fore, blm, dist) %>%
+  rename(
+    理解の程度 = MCfs,
+    冷たさ = cold,
+    能力の低さ = incomp,
+    動物的非人間化 = deh,
+    迷惑行為予測 = fore,
+    非難 = blm,
+    社会的距離 = dist
+  ) %>%
+  gtsummary::tbl_summary(
+    by = Mental,
+    type = 理解の程度 ~ "continuous",
+    statistic = all_continuous() ~ "{mean} ({sd})"
+  )
+
+sumtbl_DONT <-
+  dat_nomiss_noscene_combined %>%
+  dplyr::filter(act == "DONT") %>%
+  select(Mental, MCfs, cold, incomp, deh, fore, blm, dist) %>%
+  rename(
+    理解の程度 = MCfs,
+    冷たさ = cold,
+    能力の低さ = incomp,
+    動物的非人間化 = deh,
+    迷惑行為予測 = fore,
+    非難 = blm,
+    社会的距離 = dist
+  ) %>%
+  gtsummary::tbl_summary(
+    by = Mental,
+    type = 理解の程度 ~ "continuous",
+    statistic = all_continuous() ~ "{mean} ({sd})"
+  )
+
+tbl_merge(tbls = list(sumtbl_DO, sumtbl_DONT)) %>%
+  modify_header(
+    label ~ " ",
+    stat_1_1 ~ "dofs",
+    stat_2_1 ~ "douf",
+    stat_1_2 ~ "dontfs",
+    stat_2_2 ~ "dontuf"
+  ) %>%
+  modify_footnote(update = everything() ~ NA) %>%
+  tibble::as_tibble() %>%
+  flextable::flextable() %>%
+  flextable::colformat_num(digits = 2) %>%
+  flextable::set_caption("判断対象人物に対する条件ごとの判断結果") %>%
+  flextable::set_header_labels(
+    dofs = "理解あり",
+    douf = "理解なし",
+    dontfs = "理解あり",
+    dontuf = "理解なし"
+  ) %>%
+  flextable::add_header_row(
+    top = T,
+    values = c(" ", "実行", "非実行"),
+    colwidths = c(1, 2, 2)
+  ) %>%
+  flextable::align(i = 1:2, j = 1:5, align = "center", part = "header") %>%
+  flextable::align(j = 2:5, align = "center", part = "body") %>%
+  flextable::border_remove() %>%
+  flextable::hline_top(
+    part = "header",
+    border = officer::fp_border(width = 2)
+  ) %>%
+  flextable::vline(
+    part = "all", j = 3,
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::hline(
+    part = "header",
+    i = 2,
+    j = 1:5,
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::hline(
+    part = "body",
+    i = 7,
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::width(
+    j = 1,
+    width = 1.25
+  ) %>%
+  flextable::width(
+    j = 2:5,
+    width = 1.1
+  ) %>% 
+  flextable::add_footer_lines(values = "") %>% 
+  flextable::compose(
+    i = 1,
+    value = flextable::as_paragraph(
+      flextable::as_i("Note. "),
+      "数値は平均値（標準偏差）"
+    ),
+    part = "footer"
+  )
+```

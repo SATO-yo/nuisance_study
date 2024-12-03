@@ -1,0 +1,98 @@
+---
+title: "Study3 Appendix without Docker"
+output:
+  bookdown::html_document2: default 
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup-s3-ap, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(root.dir = "./")
+source("./.Rprofile", encoding = "utf-8")
+set.seed(123)
+```
+
+## 方法 {-}
+
+```{r AboutData-s3-ap, include=FALSE, results='hide'}
+num_male_participants <-
+  dat_nomiss_noscene_combined %>%
+  dplyr::filter(gender == "1") %>%
+  nrow() 
+
+num_female_participants <-
+  dat_nomiss_noscene_combined %>%
+  dplyr::filter(gender == "2") %>%
+  nrow()
+
+num_DO_participants_nomiss <-
+  dat_nomiss_noscene_combined %>%
+  dplyr::filter(act == "DO") %>%
+  nrow()
+
+num_DONT_participants_nomiss <-
+  dat_nomiss_noscene_combined %>%
+  dplyr::filter(act == "DONT") %>%
+  nrow()
+
+num_DO_participants_all <-
+  dat_noscene_combined %>% 
+  dplyr::filter(act == "DO") %>% 
+  nrow()
+
+num_DONT_participants_all <-
+  dat_noscene_combined %>% 
+  dplyr::filter(act == "DONT") %>% 
+  nrow()
+
+dat_nomiss_noscene_combined %>%
+  dplyr::select(age) %>%
+  {
+    colMeans(.) ->> mean_age
+    sqrt(var(.) * ((nrow(.) - 1) / nrow(.))) ->> sd_age
+  }
+
+```
+
+400名の参加者のうち，分析に使用した有効回答者数は`r nrow(dat_nomiss_noscene_combined)`名（男性`r num_male_participants`名，女性`r num_female_participants`名，その他`r nrow(dat_nomiss_noscene_combined) - num_male_participants - num_female_participants`名）だった。また，有効回答者の平均年齢（標準偏差）は`r sprintf(mean_age, fmt = '%.2f')`歳（`r sprintf(sd_age, fmt = '%.2f')`）であった。まず，これまでの研究と同様に，同一IPアドレスからの3回目以降の回答は除外対象としたが，これに該当する回答は存在しなかった。また，シナリオ内で判断対象人物が実際に迷惑行為を実行したかどうかの操作確認の質問に対して，一度でも不正確な回答をした参加者は分析から除外した。この操作確認の正答率は，迷惑行為実行条件で`r sprintf(num_DO_participants_nomiss/num_DO_participants_all*100, fmt = '%.2f')`％（`r num_DO_participants_nomiss`/`r num_DO_participants_all`名），非実行条件で`r sprintf(num_DONT_participants_nomiss/num_DONT_participants_all*100, fmt = '%.2f')`％（`r num_DONT_participants_nomiss`/`r num_DONT_participants_all`名）であった。
+
+<br>
+
+## 結果 {-}
+
+各従属変数間の散布図と相関係数を Figure S\@ref(fig:cor-fs-s3) および Figure S\@ref(fig:cor-uf-s3) に示した。
+
+```{r cor-fs-s3, fig.height=7, fig.width=7, message=FALSE, fig.cap="理解あり条件での各変数の得点の分布と変数間の相関"}
+dat_nomiss_noscene_combined %>% 
+  dplyr::filter(Mental == "FS") %>% 
+  dplyr::select(MCfs, cold, fore, dist, blm, incomp, deh) %>% 
+  dplyr::rename(
+    understanding = MCfs,
+    coldness = cold,
+    forecast = fore,
+    distance = dist,
+    blame = blm,
+    incompetence = incomp,
+    animalizaiton = deh
+  ) %>% 
+  GGally::ggpairs()
+```
+
+
+```{r cor-uf-s3, fig.height=7, fig.width=7, message=FALSE,  fig.cap="理解なし条件での各変数の得点の分布と変数間の相関"}
+dat_nomiss_noscene_combined %>% 
+  dplyr::filter(Mental == "UF") %>% 
+  dplyr::select(cold, fore, dist, blm, incomp, deh) %>% 
+  dplyr::rename(
+    coldness = cold,
+    forecast = fore,
+    distance = dist,
+    blame = blm,
+    incompetence = incomp,
+    animalizaiton = deh
+  ) %>% 
+  GGally::ggpairs()
+```
+

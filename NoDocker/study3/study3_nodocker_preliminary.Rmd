@@ -1,0 +1,491 @@
+---
+title: "Study3 Preliminary analysis without Docker"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+output:
+  bookdown::html_document2: default
+suppress-bibliography: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "./")
+knitr::opts_chunk$set(echo = FALSE)
+source("./.Rprofile", encoding = "utf-8")
+set.seed(123)
+
+plot_bar <- function(x, y, ylab) {
+  x %$%  
+  mutate(.,
+    act = fct_recode(
+      act, 
+      実行="DO", 
+      非実行="DONT"
+    ),
+    Mental = fct_recode(
+      Mental, 
+      理解あり="FS", 
+      理解なし="UF" 
+    ),
+    Scene = fct_recode(
+      Scene, 
+      扉付近で立ち止まる="std", 
+      隣の席に荷物を置く="bge",
+      リュックを背負う="bag"
+    )
+  ) %>% 
+  ggplot(aes(x = act, y = {{y}}, fill = Mental)) + 
+  stat_summary(
+    fun = "mean", 
+    geom = "bar", 
+    position = position_dodge(0.9), 
+    color = "Black"
+  ) +
+  stat_summary(
+    fun.data = "mean_se", 
+    geom = "errorbar", 
+    alpha = 0.9, 
+    linewidth = 0.7,
+    width = 0.1, 
+    position = position_dodge(0.9)
+  ) +
+  scale_y_continuous(breaks = 1:7, expand = c(0,0)) +
+  coord_cartesian(ylim = c(1,7)) +
+  scale_fill_grey(start = 0.5, end = 1) +
+  theme_classic() +
+  xlab(NULL) +
+  ylab(tategaki_alt(paste0(ylab))) +
+  labs(fill = NULL) +
+  theme(
+    axis.line = element_line(color = "black", lineend = "square"),
+    legend.text = element_text(size = rel(1.2)),
+    axis.text.x = element_text(
+      size = rel(2),
+      margin = margin(t=0.5,r=0,b=0,l=0, "lines")
+    ),
+    axis.text.y = element_text(size = rel(2)),
+    axis.title.y = element_text(
+      size = rel(1.8), angle = 0, vjust = 0.5,
+      margin = margin(t=0,r=0.7,b=0,l=0.3, "lines")
+    ),
+    legend.key=element_rect(fill="transparent", colour="transparent"),
+    plot.background=element_rect(fill="transparent", colour="transparent"),
+    legend.background=element_rect(fill="transparent", colour="transparent"),
+    panel.background=element_rect(fill="transparent", colour="transparent"),
+    plot.margin = margin(t=1,r=0,b=0.3,l=0, "lines")
+  ) +
+  facet_grid(. ~ Scene)
+}
+```
+
+# このファイルの概要と使用変数一覧
+
+このファイルでは、実験で使用した3種類のシナリオが独立変数と交互作用を示す積極的な証拠がないことを示す。これにより、以降の分析ではシナリオの種類を無視して分析を行うことができるのかを確認する。
+
+まず、各変数の合成変数を検討した。このために、シナリオの種類を無視して主成分分析を行った。また、パーソナリティ評価については確証的因子分析を行った。
+
+```{r list-of-values, echo=FALSE, paged.print=TRUE}
+values <- data.frame(
+  label = c(
+        "act",
+        "Mental",
+        "fore1",
+        "fore2",
+        "fore3",
+        "fore4",
+        "deh1",
+        "deh2",
+        "deh3",
+        "deh4",
+        "blm1",
+        "blm2",
+        "blm3",
+        "prsn1",
+        "prsn2",
+        "prsn3",
+        "prsn4",
+        "prsn5",
+        "prsn6",
+        "prsn7",
+        "prsn8",
+        "dist1",
+        "dist2",
+        "dist3",
+        "MCfs",
+        "age",
+        "gender"
+      ) %>% 
+    factor(),
+  
+  content = c(
+    "1:非実行, 2:実行",
+    "FS:理解, UF:無理解, NO:無情報",
+    "ガムポイ捨て",
+    "放置自転車",
+    "通行妨害",
+    "足踏み無視",
+    "従順な (UH-low, HN-low)",
+    "のんきな (UH-low, HN-high)",
+    "よくしゃべる (UH-high, HN-high)",
+    "几帳面な (UH-high, HN-low)",
+    "非難する",
+    "咎められるべき",
+    "不幸に見舞われるべき",
+    "いじわるな－親切な",
+    "人の悪い－人の良い",
+    "知的でない－知的な",
+    "無能な－有能な",
+    "乱暴な－優しい",
+    "攻撃的な－おとなしい",
+    "不注意な－注意深い",
+    "いい加減な－丁寧な",
+    "隣に座られる",
+    "自分から挨拶",
+    "目が合う",
+    "理解の有無の操作確認",
+    "年齢",
+    "1:male, 2:female"
+  ) %>% 
+    factor()
+)
+values
+```
+
+# 行動予測
+
+## 合成変数の検討
+
+```{r nfactors-fore, fig.cap="行動予測の項目に関する平行分析の結果"}
+dat_nomiss_noscene %>% 
+  dplyr::select(contains("fore")) %>% 
+  fa.parallel(., fm = "ml", plot = T) -> fa_parallel_fore
+```
+
+平行分析の結果を Figure \@ref(fig:nfactors-fore) に示す。また、行動予測4項目についての主成分分析を結果を以下に示す。これらの結果に基づき、行動予測の4項目は `r fa_parallel_fore$nfact` つの主成分で十分に説明できると判断した。そのため、4項目の算術平均値からなる合成変数を作成し、以降行動予測の変数として扱う。
+
+```{r pca-fore}
+dat_nomiss_noscene %>% 
+  dplyr::select(contains("fore")) %>% 
+  cor() %>% 
+  psych::principal(nfactors = 4, rotate = "none")
+```
+
+```{r alpha-fore}
+dat_nomiss_noscene %>% 
+  dplyr::select(contains("fore")) %>% 
+  psych::alpha() -> alpha_fore
+```
+
+行動予測4項目の内的一貫性を確認するため、α係数を以下に算出した。
+
+```{r print-alpha-fore}
+alpha_fore
+```
+
+その結果、行動予測のα係数は`r subnum(alpha_fore[["total"]][["raw_alpha"]], eql = F)`だった。
+
+## シナリオの種類の交互作用を検討
+
+各条件の平均値を表す棒グラフをFigure \@ref(fig:barplot-fore-scene) に示す。
+
+```{r barplot-fore-scene, echo=FALSE, fig.cap="条件ごとの行動予測", cache=FALSE}
+dat_nomiss %>%
+  mutate(fore = rowMeans(dplyr::select(., contains("fore")))) %>%
+  dplyr::select(ID, act, Mental, Scene, fore) %>%
+  plot_bar(y = fore, ylab = "将来迷惑行為を実行する確率")
+```
+
+判断対象人物についての行動予測に対するシナリオの種類と他の独立変数との交互作用を確認するため、迷惑行為実行の有無×理解の有無×シナリオの種類からなる参加者間要因の分散分析を行った。その結果を以下に示す。シナリオの種類と他の独立変数との2次の交互作用も1次の交互作用も有意であるとはいえなかった。この結果を踏まえ、行動予測に関する以降の分析では、シナリオの種類を無視する。
+
+```{r anova-scene-fore, cache=FALSE}
+dat_nomiss_combined %>%
+  dplyr::select(ID, act, Mental, Scene, fore) %>%
+  mutate(., act = fct_recode(act, 実行 = "DO", 非実行 = "DONT")) %$%
+  mutate(., Mental = fct_recode(
+    Mental,
+    理解あり = "FS",
+    理解なし = "UF",
+  )) %>%
+  anovakun("ABCs", 2, 2, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+# 非人間化
+
+## 合成変数の検討
+
+4個の特性語を用いて、判断対象人物が人間であるよりも動物に近いという形で非人間化される程度を表す際には、UH-低に分類される2項目の平均値とUH-高に分類される2項目の平均値の差を求める。この差が正の方向に大きな値をとるほど、判断対象人物には動物的特性の方が人間的特性よりも当てはまると評価され、動物的に非人間化される程度が大きいことを意味する。これを踏まえ、使用した4項目から作成される動物的非人間化の合成変数の尺度構造と信頼性を検証するため、これらの項目の主成分分析を実施した。
+
+```{r nfactors-deh, fig.cap="非人間化の項目に関する平行分析の結果"}
+dat_nomiss_noscene %>%
+  dplyr::transmute(
+    deh1 = deh1,
+    deh2 = deh2,
+    deh3 = 8 - deh3,
+    deh4 = 8 - deh4
+  ) %>%
+  psych::fa.parallel(., fm = "ml", plot = T) -> fa_parallel_deh
+```
+
+非人間化の項目に関する平行分析の結果をFigure \@ref(fig:nfactors-deh) に示す。また、これらの項目についての主成分分析の結果を以下に示す。4項目すべてが第1主成分に高い負荷量を示すものの、全項目が第1主成分に最大に負荷量を示しているわけではない。しかし、非人間化の尺度項目が動物的非人間化と機械的非人間化のいずれにも対応していると考えられることと、尺度項目が事前調査に基づいて作成されたことを踏まえ、4項目による動物的非人間化の合成変数とみなすこととした。したがって、以降の分析では、「従順な」と「のんきな」の参加者ごとの算術平均値から「よくしゃべる」と「几帳面な」の参加者ごとの算術平均値を引いた値を、各参加者の非人間化の回答値として扱う。
+
+```{r pca-deh}
+dat_nomiss_noscene %>%
+  dplyr::transmute(
+    deh1 = deh1,
+    deh2 = deh2,
+    deh3 = 8 - deh3,
+    deh4 = 8 - deh4
+  ) %>%
+  cor() %>% 
+  psych::principal(nfactors = 4, rotate = "none")
+```
+
+```{r alpha-deh, echo=FALSE}
+dat_nomiss_noscene %>% 
+  dplyr::transmute(
+    deh1 = deh1,
+    deh2 = deh2,
+    deh3 = 8 - deh3,
+    deh4 = 8 - deh4
+  ) %>% 
+  psych::alpha() -> alpha_deh
+```
+
+また、非人間化4項目の内的一貫性を確認するため、α係数を以下に算出した。
+
+```{r print-alpha-deh, echo=FALSE}
+alpha_deh
+```
+
+その結果、行動予測のα係数は`r subnum(alpha_deh[["total"]][["raw_alpha"]], eql = F)`だった。
+
+## シナリオの種類の交互作用を検討
+
+各条件での動物的非人間化の程度の平均値をFigure \@ref(fig:barplot-deh-scene) に示す。
+
+```{r barplot-deh-scene, echo=FALSE, fig.cap="条件ごとの動物的非人間化"}
+dat_nomiss_combined %>% 
+  dplyr::select(ID, act, Mental, Scene, deh) %>%
+  plot_bar(y = deh, ylab = "動物的非人間化の程度") +
+  labs(fill = NULL, caption = "値が高いほど非人間化をしていることを意味する") +
+  scale_y_continuous(breaks = -3:3, expand = c(0, 0)) +
+  coord_cartesian(ylim = c(-3, 3))
+```
+
+シナリオの種類と他の独立変数との交互作用を確認するため、迷惑行為実行の有無×理解の有無×シナリオの種類からなる参加者間要因の分散分析を行った。その結果を以下に示す。シナリオの種類と他の独立変数との2次の交互作用も1次の交互作用も有意であるとはいえなかった。この結果を踏まえ、動物的非人間化に関する以降の分析では、シナリオの種類を無視する。
+
+```{r anova-scene-deh, cache=FALSE}
+dat_nomiss_combined %>% 
+  dplyr::select(ID, act, Mental, Scene, deh) %>%
+  mutate(., act = fct_recode(act, 実行 = "DO", 非実行 = "DONT")) %$%
+  mutate(., Mental = fct_recode(
+    Mental,
+    理解あり = "FS",
+    理解なし = "UF",
+  )) %>%
+  anovakun("ABCs", 2, 2, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+# 非難
+
+## 合成変数の検討
+
+```{r nfactors-blm, fig.cap="非難の項目に関する平行分析の結果"}
+dat_nomiss_noscene %>%
+  dplyr::select(contains("blm")) %>% 
+  fa.parallel(., fm = "ml", plot = T) -> fa_parallel_blm
+```
+
+非難の項目に関する平行分析の結果をFigure \@ref(fig:nfactors-blm) に示す。また、これらの項目についての主成分分析を結果を以下に示す。平行分析と主成分分析の結果からは、避難の3項目が1つの主成分を形成していると解釈することができる。そのため、これらの算術平均値からなる合成変数を作成し、以降では非難の得点として扱う。
+
+```{r pca-blm}
+dat_nomiss_noscene %>%
+  dplyr::select(contains("blm")) %>% 
+  cor() %>% 
+  psych::principal(nfactors = 3, rotate = "none")
+```
+
+```{r alpha-blm}
+dat_nomiss_noscene %>% 
+  dplyr::select(contains("blm")) %>% 
+  psych::alpha() -> alpha_blm
+```
+
+また、非難3項目の内的一貫性を確認するため、α係数を以下に算出した。
+
+```{r print-alpha-blm}
+alpha_blm
+```
+
+その結果、行動予測のα係数は`r subnum(alpha_blm[["total"]][["raw_alpha"]], eql = F)`だった。
+
+## シナリオの種類の交互作用を検討
+
+```{r barplot-blm-scene, echo=FALSE, fig.cap="条件ごとの非難"}
+dat_nomiss_combined %>% 
+  dplyr::select(ID, act, Mental, Scene, blm) %>%
+  plot_bar(y = blm, ylab = "非難の程度")
+```
+
+```{r anova-scene-blm, cache=FALSE}
+dat_nomiss_combined %>%  
+  dplyr::select(ID, act, Mental, Scene, blm) %>%
+  mutate(., act = fct_recode(act, 実行 = "DO", 非実行 = "DONT")) %$%
+  mutate(., Mental = fct_recode(
+    Mental,
+    理解あり = "FS",
+    理解なし = "UF",
+  )) %>%
+  anovakun("ABCs", 2, 2, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+# パーソナリティ評価
+
+## 合成変数の検討
+
+```{r nfactors-prsn, fig.cap="パーソナリティ評価の項目に関する平行分析の結果"}
+dat_nomiss_noscene %>%
+  dplyr::select(contains("prsn")) %>%
+  psych::fa.parallel(., fm = "ml", plot = T) -> fa_parallel_prsn
+
+dat_nomiss_noscene %>%
+  dplyr::select(contains("prsn")) %>%
+  psych::vss(plot = F)
+
+```
+
+```{r cfa-prsn}
+prsnmodel <- '
+  cold=~prsn1+prsn2+prsn5+prsn6
+  incomp=~prsn3+prsn4+prsn7+prsn8
+'
+cfa_prsn <-
+  dat_nomiss_noscene %>%
+  dplyr::select(contains("prsn")) %>%
+  lavaan::cfa(prsnmodel, data = ., std.lv = TRUE) %>% 
+  summary(fit.measure = TRUE, standardized = TRUE)
+```
+
+研究2と同様に、判断対象人物に対する印象が冷たさと知的能力の欠如の２因子構造になっていることを確認するため、確証的因子分析を実施した。その結果、モデル適合度は慣例的な基準を満たしていないものの（CFI = `r cfa_prsn$fit[["cfi"]]`; RMSEA = `r cfa_prsn$fit[["rmsea"]]`, 95% CI [`r cfa_prsn$fit[["rmsea.ci.lower"]]`, `r cfa_prsn$fit[["rmsea.ci.upper"]]`]）、各項目の因子負荷量はどれも想定した因子に対して高い負荷量を示していた。そのため、以降の分析では「いじわるな－親切な」・「人の悪い－人の良い」・「乱暴な－優しい」・「攻撃的な－おとなしい」の算術平均を、判断対象人物の冷たさの得点とし、「知的でない－知的な」・「無能な－有能な」・「不注意な－注意深い」・「いい加減な－丁寧な」の算術平均を知的能力の低さの得点とする。
+```{r alpha-prsn, echo=FALSE}
+dat_nomiss_noscene %>% 
+  dplyr::select(prsn1, prsn2, prsn5, prsn6) %>% 
+  psych::alpha() -> alpha_cold
+
+dat_nomiss_noscene %>% 
+  dplyr::select(prsn3, prsn4, prsn7, prsn8) %>% 
+  psych::alpha() -> alpha_incomp
+```
+
+また、冷たさの得点と知的能力の低さの得点の内的一貫性を確認するため、それぞれのα係数を以下に算出した。
+
+```{r print-alpha-cold, echo=FALSE}
+alpha_cold
+```
+
+```{r print-alpha-incomp, echo=FALSE}
+alpha_incomp
+```
+
+その結果、冷たさのα係数は`r subnum(alpha_cold[["total"]][["raw_alpha"]], eql = F)`、知的能力の低さのα係数は`r subnum(alpha_incomp[["total"]][["raw_alpha"]], eql = F)`だった。
+
+## シナリオの種類の交互作用を検討
+
+### 冷たさ
+
+冷たさに対して、シナリオの種類と、他の独立変数と2次及び1次の交互作用は有意ではなかった。そのため、以降の冷たさの分析ではシナリオの種類を無視する。
+
+```{r barplot-cold-scene, fig.cap="条件ごとの冷たさの評価平均値"}
+dat_nomiss_combined %>%
+  dplyr::select(ID, act, Mental, Scene, cold) %>%
+  plot_bar(y = cold, ylab = "冷たさの程度")
+```
+
+```{r anova-scene-cold, cache=FALSE}
+dat_nomiss_combined %>%
+  dplyr::select(ID, act, Mental, Scene, cold) %>%
+  mutate(., act = fct_recode(act, 実行 = "DO", 非実行 = "DONT")) %$%
+  mutate(., Mental = fct_recode(
+    Mental,
+    理解あり = "FS",
+    理解なし = "UF",
+  )) %>%
+  anovakun("ABCs", 2, 2, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+### 能力の低さ
+
+知的能力の欠如に対して、シナリオの種類と、他の独立変数と2次及び1次の交互作用は有意ではなかった。そのため、知的能力の低さに関する意向の分析では、シナリオの種類を無視する。
+
+```{r barplot-incomp-scene, fig.cap="条件ごとの知的能力の低さの評価平均値"}
+dat_nomiss_combined %>%
+  dplyr::select(ID, act, Mental, Scene, incomp) %>%
+  plot_bar(y = incomp, ylab = "能力の低さの程度")
+```
+
+```{r anova-scene-incomp, cache=FALSE}
+dat_nomiss_combined %>%
+  dplyr::select(ID, act, Mental, Scene, cold) %>%
+  mutate(., act = fct_recode(act, 実行 = "DO", 非実行 = "DONT")) %$%
+  mutate(., Mental = fct_recode(
+    Mental,
+    理解あり = "FS",
+    理解なし = "UF",
+  )) %>%
+  anovakun("ABCs", 2, 2, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
+
+# 社会的距離
+
+## 合成変数の検討
+
+```{r nfactors-dist, fig.cap="社会的距離の項目に関する平行分析の結果"}
+dat_nomiss_noscene %>%
+  dplyr::select(contains("dist")) %>%
+  psych::fa.parallel(., fm = "ml", plot = T) -> fa_parallel_dist
+```
+
+平行分析の結果を Figure \@ref(fig:nfactors-dist) に示す。また、社会的距離3項目についての主成分分析を結果を以下に示す。これらの結果に基づき、社会的距離の3項目は `r fa_parallel_dist$nfact` つの主成分で十分に説明できると判断した。そのため、4項目の算術平均値からなる合成変数を作成し、以降社会的距離の得点として扱う。
+
+```{r pca-dist}
+dat_nomiss_noscene %>% 
+  dplyr::select(contains("dist")) %>% 
+  cor() %>% 
+  psych::principal(nfactors = 3, rotate = "none")
+```
+
+```{r alpha-dist}
+dat_nomiss_noscene %>% 
+  dplyr::select(contains("dist")) %>% 
+  psych::alpha() -> alpha_dist
+```
+
+社会的距離3項目の内的一貫性を確認するため、α係数を以下に算出した。
+
+```{r print-alpha-dist, echo=FALSE}
+alpha_dist
+```
+
+その結果、社会的距離のα係数は`r subnum(alpha_dist[["total"]][["raw_alpha"]], eql = F)`だった。
+
+## シナリオの種類の交互作用を検討
+
+社会的距離に対して、シナリオの種類と、他の独立変数と2次及び1次の交互作用は有意ではなかった。そのため、以降の社会的距離の分析ではシナリオの種類を無視する。
+
+```{r barplot-dist-scene, echo=FALSE, fig.cap="条件ごとの社会的距離の評価平均値"}
+dat_nomiss_combined %>%
+  dplyr::select(ID, act, Mental, Scene, dist) %>%
+  plot_bar(y = dist, ylab = "判断対象との社会的距離")
+```
+
+```{r anova-scene-dist, cache=FALSE}
+dat_nomiss_combined %>%
+  dplyr::select(ID, act, Mental, Scene, dist) %>%
+  mutate(., act = fct_recode(act, 実行 = "DO", 非実行 = "DONT")) %$%
+  mutate(., Mental = fct_recode(
+    Mental,
+    理解あり = "FS",
+    理解なし = "UF",
+  )) %>%
+  anovakun("ABCs", 2, 2, 3, long = T, geta = T, cin = T, holm = T, auto = T)
+```
