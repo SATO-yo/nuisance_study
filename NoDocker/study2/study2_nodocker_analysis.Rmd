@@ -1,0 +1,890 @@
+---
+title: "Study2 Analysis without Docker"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+output:
+  bookdown::html_document2: default
+suppress-bibliography: yes
+---
+
+```{r setup-s2, include=FALSE}
+knitr::opts_knit$set(root.dir = "./")
+knitr::opts_chunk$set(echo = FALSE)
+source("./.Rprofile", encoding = "utf-8")
+set.seed(123)
+```
+
+
+# 方法
+
+<br>
+
+## 参加者 {-}
+
+```{r AboutData-s2, include=FALSE, results='hide'}
+dat_combined %>%
+  dplyr::filter(gender == "1" & act == "DO" & Mental == "FS" | gender == "1" & act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_male_participants_s2
+
+dat_combined %>%
+  dplyr::filter(gender == "2" & act == "DO" & Mental == "FS" | gender == "2" & act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_female_participants_s2
+
+dat_combined %>%
+  dplyr::filter(act == "DO" & Mental == "FS") %>%
+  nrow() -> num_DO_participants_s2
+
+dat_combined %>%
+  dplyr::filter(act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_DONT_participants_s2
+
+dat_combined %>%
+  dplyr::filter(act == "DO" & Mental == "FS" | act == "DONT" & Mental == "FS") %>%
+  dplyr::select(age) %>%
+  {
+    colMeans(.) ->> mean_age_s2
+    sqrt(var(.) * ((nrow(.) - 1) / nrow(.))) ->> sd_age_s2
+  }
+```
+
+クラウドソーシングサービスのLancers上で募集した，18歳以上の日本国籍保有者150名が同意の上で実験に参加した。このうち，分析に使用した有効回答者数は`r num_male_participants_s2+num_female_participants_s2`名（男性`r num_male_participants_s2`名，女性`r num_female_participants_s2`名）だった。また，回答者の平均年齢（標準偏差）は`r round(mean_age_s2, 2)`歳（`r round(sd_age_s2, 2)`）であった。まず，全参加者データのうち，同一IPアドレスからの3回の回答があった1件に関しては，3回目のデータを分析から除外した。また，Qualtricsの設定の問題により，報酬を支払った参加者と結びつけられない回答データが37件あった。そのため，これら37件は分析からは除外した。最終的に，実行条件に割り当てられた人数は`r num_DO_participants_s2`名，非実行条件に割り当てられた人数は`r num_DONT_participants_s2`名であった。
+
+<br>
+
+## 質問項目 {-}
+
+```{r alpha-s2, results='hide', include=FALSE}
+alpha_cold <-
+  dat %>% 
+  dplyr::select(prsn1,prsn2,prsn5,prsn6) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_incomp <-
+  dat %>% 
+  dplyr::select(prsn3,prsn4,prsn7,prsn8) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_uh <-
+  dat %>% 
+  dplyr::transmute(
+    deh3 = deh3,
+    deh4 = deh4,
+    deh7 = deh7,
+    deh8 = deh8,
+    deh11 = deh11,
+    deh12 = deh12,
+    deh15 = deh15, 
+    deh16 = deh16,
+    deh1 =  -deh1, 
+    deh2 =  -deh2,
+    deh5 =  -deh5,
+    deh6 =  -deh6,
+    deh9 =  -deh9,
+    deh10 = -deh10, 
+    deh13 = -deh13,
+    deh14 = -deh14
+  ) %>% 
+  psych::alpha(check.keys = TRUE) %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  abs() %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_fore <-
+  dat %>% 
+  dplyr::select(contains("fore")) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_blm <-
+  dat %>% 
+  dplyr::select(contains("blm")) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_dist <-
+    dat %>% 
+  dplyr::select(contains("dist")) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+
+```
+
+**判断対象人物の印象**　人物への印象の測定項目を修正し，冷たさの次元（$\alpha$ = `r alpha_cold`）では @hayashi1978twodimensions の「いじわるな－親切な」「人の悪い－人の良い」に「乱暴な－優しい」「攻撃的な－おとなしい」を加えた。能力の低さの次元（$\alpha$ = `r alpha_incomp`）では，@hayashi1978twodimensions の「知的でない－知的な」に，「無能な－有能な」「不注意な－注意深い」「いい加減な－丁寧な」を加えた。参加者は研究1と同様に，それぞれの対になった特性語のどちらが判断対象人物により当てはまるかを1から7で回答した。
+
+**非人間化**　多数の特性語について「動物と比較した際に人間にのみ当てはまる程度」（Uniquely Human: UH，1：動物にも人間にも当てはまる～7：人間にのみ当てはまる），「機械と比較した際に人間にのみ当てはまる程度」（Human Nature: HN，1：機械にも人間にも当てはまる～7：人間にのみ当てはまる），「望ましさ」（1：全く望ましくない～7：非常に望ましい）の3つの側面について評定を得た先行研究 [@sharma2021empiricalstudy] の結果をもとに，人間性に関連する16個の特性語を使用した。これらの特性語は，2（UHの高低）×2（HNの高低）×2（望ましさの高低）に組み合わせによって，8グループに2語ずつ分類される。各グループに属する特性語を Table S\@ref(tab:dehum-items) に示す。
+
+参加者は各特性語が判断対象人物に当てはまる程度を7件法で回答した（1：全く当てはまらない～7：非常によく当てはまる，$\alpha$ = `r alpha_uh`）。これら16個の特性語を用いて，判断対象人物が人間であるよりも動物に近いという形で非人間化される程度を表す際には，UH-低に分類される8項目の平均値とUH-高に分類される8項目の平均値の差を求める。この差が正の方向に大きな値をとるほど，動物的に非人間化される程度が大きいことを意味する。
+
+非人間化の測定にあたってUHとNHと望ましさの3次元を考慮して特性語を選出したことで，UH以外の次元との交絡を防ぐことを意図した。UH-低に属する8個の特性語（1～7での評定でのレンジは2.15～3.51）には，HN-高の特性語（5.21～6.03）とNH-低の特性語（3.02～3.90）が同数ずつ含まれている。同様に，UH-高に属する8個の特性語（4.05～5.85）にも，HN-高の特性語（5.15～6.23）とHN-低の特性語（2.73～3.55）が同数ずつ含まれる。これは望ましさの観点でも同様である。UH-低の特性語には，望ましいもの（5.69～6.36）と望ましくないもの（2.21～2.46）が同数ずつ含まれ，UH-高の特性語にもこれが成り立っている（望ましい：5.54～6.22，望ましくない：1.44～2.33）。そのため，UH-低とUH-高の差得点を算出する際に，平均化処理の過程で各特性語のHNと望ましさの影響が相殺され，評定値にこれらが交絡するのを防いでいる。
+
+```{r dehum-items, cache=FALSE, echo=FALSE}
+tibble(
+  desirability = c(
+    rep(factor("望ましさ高"), 4),
+    rep(factor("望ましさ低"), 4)
+  ),
+  uniqueness = c(
+    rep(c(
+      "HN高", "HN高", "HN低", "HN低"  
+    ), 2)
+  ) %>% factor(),
+  特性語1 = c(
+    "同情心がある",
+    "想像力豊かだ",
+    "公平な",
+    "きちんとした",
+    "口汚い",
+    "軽率な",
+    "冷淡な",
+    "人情味のない"
+  ),
+  特性語2 = c(
+    "好奇心旺盛な",
+    "生き生きとした",
+    "器用な",
+    "利口な",
+    "狡猾な",
+    "野蛮な",
+    "非情な",
+    "無慈悲な"
+  ),
+) %>% 
+  flextable::flextable() %>% 
+  flextable::merge_v(j = 1, part = "body") %>% 
+  flextable::merge_v(j = 2, part = "body") %>% 
+  flextable::set_header_labels(
+    desirability = " ",
+    uniqueness = " ",
+    特性語1 = "UH高",
+    特性語2 = "UH低"
+  ) %>% 
+  flextable::border_remove() %>% 
+  flextable::hline_top(
+    part = "header",
+    border = officer::fp_border(width = 2)
+  ) %>% 
+  flextable::hline_top(
+    j = 1:4,
+    part = "body",
+    border = officer::fp_border(width = 1)
+  ) %>% 
+  flextable::hline(
+    i = 4,
+    j = 1:4,
+    part = "body",
+    border = officer::fp_border(width = 1)
+  ) %>% 
+  flextable::hline(
+    i = 8,
+    j = 3:4,
+    part = "body",
+    border = officer::fp_border(width = 1)
+  ) %>% 
+  #結合した分だけ2列目の下端が上がっているための処理
+  flextable::hline(
+    i = 8,
+    j = 2,
+    part = "body",
+    border = officer::fp_border(width = 1)
+  ) %>%
+  # # 結合した分だけ1列目の下端が上がっているための処理
+  flextable::hline(
+    i = 8,
+    j = 1,
+    part = "body",
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::vline(
+    j = 3,
+    part = "all",
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::align(j = 1:4, align = "center", part = "body") %>%
+  flextable::align(j = 3:4, align = "center", part = "header") %>% 
+  flextable::width(
+    j = 1,
+    width = 0.8,
+  ) %>%
+  flextable::width(
+    j = 2,
+    width = 0.6,
+  ) %>%
+  flextable::width(
+    j = c(3, 4),
+    width = 1.3,
+  ) %>% 
+  flextable::bg(i = c(3,4,7,8), j = c(2:4), bg = "grey", part = "body") %>%
+  flextable::set_caption("予備的研究で使用した非人間化の尺度項目")
+```
+
+**行動予測** 判断対象人物の将来の行動に関する予測を検討するため，シナリオで題材にした迷惑行為とは別の4つの迷惑行為を，判断対象人物が今後実行する可能性について評価するように求めた。ここで予測することを求めた別の迷惑行為は，@yoshida1999meiwaku1 挙げられた迷惑行為群のうちから，「ガムを路上に吐き捨てる」，「指定場所以外での自転車の駐輪」，「狭い通路のすれ違う際に道を譲らない」，「電車内で他人の足を踏んで気づかないふりをする」の4つを使用した。参加者は，シナリオ中の場面の次の日に判断対象人物がこれら4つの行為を行う可能性をそれぞれ7件法で回答した（1：絶対に行わない～7：必ず行う，$\alpha$ = `r alpha_fore`）。
+
+**社会的距離**　判断対象人物との間に置きたいと思う社会的距離を示すために，参加者は3項目の内容を判断対象人物に対してどの程度思っているかを回答した（1＝全くそう思わない～7＝強くそう思う）。各項目はそれぞれ，「電車内でその人が隣に座ってきても嫌ではない」「知り合いだった場合，自分からこの人に挨拶する」「この人と目を合わせても平気だ」であった（$\alpha$ = `r alpha_dist`）。
+
+**非難**　判断対象人物を非難する程度を測定するため，3つの項目に回答するように参加者に求めた。これらの項目はそれぞれ，「ターゲット人物が行ったことに関して，あなたはターゲット人物をどの程度非難しますか」（1：全く非難しない～7：非常に強く非難する），「ターゲット人物が行ったことに関して，ターゲット人物は咎められるべきだとあなたは思いますか」（1：全くそうは思わない～7：強くそう思う），「あなたは，ターゲット人物が今後不幸に見舞われてしかるべきだと思いますか」（1：全くそうは思わない～7：強くそう思う）であった（$\alpha$ = `r alpha_blm`）。
+
+**操作確認**　研究1と同一のものを使用した。
+
+<br>
+
+## 手続き {-}
+
+使用したシナリオは，研究1のものと同一である。また，実験条件の設定や実験の実施手順も研究1のものと概ね同一である。ただし，質問項目の呈示順序に関する2点の変更を加えた。第1の変更点は，操作確認を全従属変数の測定の後に行うようにしたことである。したがって，実験参加者は1つのシナリオを読むごとに，登場人物に関する質問項目群に回答し，続いて操作確認の項目に回答した。第2の変更点は，判断対象人物の行動予測，判断対象人物への非難，および非人間化の質問項目がまずランダムな順に呈示され，続いて残りの質問項目がランダムな順に呈示されるようにしたことである。
+
+<br>
+
+# 結果
+
+<br>
+
+各条件におけるそれぞれの変数の平均値と標準偏差をTable S\@ref(tab:make-sum-table-s2) に示した。また，理解あり・理解なし・情報なしの条件ごとに，各変数間の散布図と相関係数をそれぞれ Figure S\@ref(fig:cor-fs-s2)，Figure S\@ref(fig:cor-uf-s2)，Figure S\@ref(fig:cor-no-s2) に示した。
+
+```{r anova-s2, include=FALSE, results='hide', cache=FALSE}
+anova_results <- 
+  dat_combined %>% 
+  anovakun_main(
+    id = "ID",
+    iv_b = "act",
+    iv_w = "Mental",
+    dv = c("MCfs", "cold", "incomp", "deh"),
+    design = "AsB",
+    fac_levels = c(2, 3),
+    eta_g = TRUE, 
+    eta_p = FALSE,
+    besci = TRUE,
+    nesci = TRUE,
+    intr1 = "act",
+    intr2 = "Mental"
+  )
+```
+
+```{r make-sum-table-s2, cache=FALSE, eval=TRUE}
+sumtbl_DO <-
+  dat_combined %>%
+  dplyr::filter(act == "DO") %>%
+  select(Mental, MCfs, cold, incomp, deh, fore,dist, blm) %>%
+  rename(
+    理解の程度 = MCfs,
+    冷たさ = cold,
+    能力の低さ = incomp,
+    動物的非人間化 = deh,
+    迷惑行為予測 = fore,
+    社会的距離 = dist,
+    非難 = blm
+  ) %>%
+  tbl_summary(
+    by = Mental,
+    type = 理解の程度 ~ "continuous",
+    statistic = all_continuous() ~ "{mean} ({sd})"
+  )
+
+sumtbl_DONT <-
+  dat_combined %>%
+  dplyr::filter(act == "DONT") %>%
+  select(Mental, MCfs, cold, incomp, deh, fore, dist, blm) %>%
+  rename(
+    理解の程度 = MCfs,
+    冷たさ = cold,
+    能力の低さ = incomp,
+    動物的非人間化 = deh,
+    迷惑行為予測 = fore,
+    社会的距離 = dist,
+    非難 = blm
+  ) %>%
+  tbl_summary(
+    by = Mental,
+    type = 理解の程度 ~ "continuous",
+    statistic = all_continuous() ~ "{mean} ({sd})"
+  )
+
+tbl_merge(tbls = list(sumtbl_DO, sumtbl_DONT)) %>%
+  modify_header(
+    label ~ " ",
+    stat_1_1 ~ "dofs",
+    stat_2_1 ~ "douf",
+    stat_3_1 ~ "dono",
+    stat_1_2 ~ "dontfs",
+    stat_2_2 ~ "dontuf",
+    stat_3_2 ~ "dontno"
+  ) %>%
+  modify_footnote(update = everything() ~ NA) %>%
+  tibble::as_tibble() %>%
+  flextable::flextable() %>%
+  flextable::colformat_num(digits = 2) %>%
+  flextable::set_caption("判断対象人物に対する条件ごとの判断結果") %>%
+  flextable::set_header_labels(
+    dofs = "理解あり",
+    douf = "理解なし",
+    dono = "情報なし",
+    dontfs = "理解あり",
+    dontuf = "理解なし",
+    dontno = "情報なし"
+  ) %>%
+  flextable::add_header_row(
+    top = T,
+    values = c(" ", "実行", "非実行"),
+    colwidths = c(1, 3, 3)
+  ) %>%
+  flextable::align(i = 1:2, j = 1:7, align = "center", part = "header") %>%
+  flextable::align(j = 2:7, align = "center", part = "body") %>%
+  flextable::border_remove() %>%
+    flextable::hline_top(
+    part = "header",
+    border = officer::fp_border(width = 2)
+  ) %>%
+  flextable::vline(
+    part = "all", j = 4,
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::hline(
+    part = "header",
+    i = 1,
+    j = 2:7,
+    border = officer::fp_border(width = 1)
+  ) %>%
+    flextable::hline(
+    part = "header",
+    i = 2,
+    j = 1:7,
+    border = officer::fp_border(width = 1)
+  ) %>%
+    flextable::hline(
+    part = "body",
+    i = 7,
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::width(j = 1, width = 1.25) %>%
+  # flextable::width(j = 2:7, width = 1.1) %>% 
+  flextable::add_footer_lines(values = "") %>% 
+  flextable::compose(
+    i = 1,
+    value = flextable::as_paragraph(
+      flextable::as_i("Note. "),
+      "数値は平均値（標準偏差）。"
+    ),
+    part = "footer"
+  )
+```
+
+```{r cor-fs-s2, fig.height=7, fig.width=7, message=FALSE,  fig.cap="理解あり条件での各変数の得点の分布と変数間の相関"}
+dat_combined %>% 
+  dplyr::filter(Mental == "FS") %>% 
+  dplyr::select(cold, fore, dist, blm, incomp, deh) %>% 
+  dplyr::rename(
+    coldness = cold,
+    forecast = fore,
+    distance = dist,
+    blame = blm,
+    incompetence = incomp,
+    animalizaiton = deh
+  ) %>% 
+  GGally::ggpairs()
+```
+
+```{r cor-uf-s2, fig.height=7, fig.width=7, message=FALSE,  fig.cap="理解なし条件での各変数の得点の分布と変数間の相関"}
+dat_combined %>% 
+  dplyr::filter(Mental == "UF") %>% 
+  dplyr::select(cold, fore, dist, blm, incomp, deh) %>% 
+  dplyr::rename(
+    coldness = cold,
+    forecast = fore,
+    distance = dist,
+    blame = blm,
+    incompetence = incomp,
+    animalizaiton = deh
+  ) %>% 
+  GGally::ggpairs()
+```
+
+```{r cor-no-s2, fig.height=7, fig.width=7, message=FALSE,  fig.cap="情報なし条件での各変数の得点の分布と変数間の相関"}
+dat_combined %>% 
+  dplyr::filter(Mental == "NO") %>% 
+  dplyr::select(cold, fore, dist, blm, incomp, deh) %>% 
+  dplyr::rename(
+    coldness = cold,
+    forecast = fore,
+    distance = dist,
+    blame = blm,
+    incompetence = incomp,
+    animalizaiton = deh
+  ) %>% 
+  GGally::ggpairs()
+```
+
+<br>
+
+## 操作確認 {-}
+
+```{r prop_correct_answer_MCdo-s2, include=FALSE, results='hide'}
+n_incorr_DONT <-
+  dat %>% 
+  dplyr::group_by(ID) %>% 
+  dplyr::filter(!any(is.na(.data$MCdo))) %>%
+  dplyr::filter(any(act == "DONT" & MCdo == 2 | act == "DO" & MCdo == 1)) %>% 
+  dplyr::ungroup()  %>%
+  dplyr::filter(act == "DONT") %>%
+  nrow()
+n_incorr_DO <-
+  dat %>% 
+  dplyr::group_by(ID) %>% 
+  dplyr::filter(!any(is.na(.data$MCdo))) %>%
+  dplyr::filter(any(act == "DONT" & MCdo == 2 | act == "DO" & MCdo == 1)) %>% 
+  dplyr::ungroup()  %>%
+  dplyr::filter(act == "DO") %>%
+  nrow()
+
+n_all_DONT <-
+  dat %>% 
+  dplyr::group_by(ID) %>% 
+  dplyr::filter(!any(is.na(.data$MCdo))) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(act == "DONT") %>%
+  nrow()
+n_all_DO <-
+  dat %>% 
+  dplyr::group_by(ID) %>% 
+  dplyr::filter(!any(is.na(.data$MCdo))) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(act == "DO") %>%
+  nrow()
+
+n_incorr_DONT_UF <-
+  dat %>% 
+  dplyr::filter(!is.na(.data$MCdo)) %>%
+  dplyr::filter(act == "DONT" & MCdo == 2 | act == "DO" & MCdo == 1) %>% 
+  dplyr::filter(act == "DONT", Mental == "UF") %>%
+  nrow()
+n_incorr_DONT_FS <-
+  dat %>% 
+  dplyr::filter(!is.na(.data$MCdo)) %>%
+  dplyr::filter(act == "DONT" & MCdo == 2 | act == "DO" & MCdo == 1) %>% 
+  dplyr::filter(act == "DONT", Mental == "FS") %>%
+  nrow()
+n_incorr_DONT_NO <-
+  dat %>% 
+  dplyr::filter(!is.na(.data$MCdo)) %>%
+  dplyr::filter(act == "DONT" & MCdo == 2 | act == "DO" & MCdo == 1) %>% 
+  dplyr::filter(act == "DONT", Mental == "NO") %>%
+  nrow()
+```
+
+実験では，技術的な問題によりターゲット人物の迷惑行為の有無を確認する質問が正しく呈示されなかった。そのため，この質問が3つのシナリオすべてで正しく呈示された `r (n_all_DO + n_all_DONT)/3` 名を対象に，シナリオ中でターゲット人物が迷惑行為を実行したかどうかの操作確認を行った。その結果，実行条件では`r sprintf(100 - n_incorr_DO/n_all_DO*100, fmt = '%.2f')`％（`r n_all_DO/3 - n_incorr_DO/3`/`r n_all_DO/3`名），非実行条件で`r sprintf(100 - n_incorr_DONT/n_all_DONT*100, fmt = '%.2f')`％（`r n_all_DONT/3 - n_incorr_DONT/3`/`r n_all_DONT/3`名）が，3つのシナリオすべてで正しい回答をしたことが確認された。非実行条件のうち，この操作確認に誤答したのは，理解あり条件で `r n_incorr_DONT_FS` 件，情報なし条件で `r n_incorr_DONT_NO` 件であったのに対し，理解なし条件では `r n_incorr_DONT_UF` 件と，数が多くなっていた。このことから，自身の行動が周囲に及ぼす悪影響を理解していない人物は，迷惑行為を実行したと混同されやすくなる可能性が考えられる。また，研究1と比較して非実行条件の正答率が低下した原因として，迷惑行為の有無の操作確認がシナリオの直後ではなく，シナリオに関する質問群の末尾に呈示されたことが考えられる。これにより，シナリオを読んでから操作確認に回答するまでの時間が長くなり，この混同が顕著になった可能性がある。しかし，参加者は概ね条件操作に沿った回答をしたため，ターゲット人物の迷惑行為の実行の操作は成功したと判断した。
+
+```{r t-test-mcfs-s2}
+t_test_mcfs_DO <-
+  dat_combined %>% 
+  dplyr::filter(Mental %in% c("FS", "UF") & act == "DO") %>% 
+  t.test(MCfs ~ Mental, data = ., paired = TRUE, var.equal = FALSE) %>% 
+  papaja::apa_print() %>% 
+  .$full_result
+
+t_test_mcfs_DONT <-
+  dat_combined %>% 
+  dplyr::filter(Mental %in% c("FS", "UF") & act == "DONT") %>% 
+  t.test(MCfs ~ Mental, data = ., paired = TRUE, var.equal = FALSE) %>% 
+  papaja::apa_print() %>% 
+  .$full_result
+```
+
+続いて，判断対象人物の迷惑に関する理解の有無の操作確認のため，自身の行動の結果に対する判断対象人物の理解の程度の推測値に関して，2要因混合分散分析を行った。その結果，有意な交互作用が検出された（`r anova_results[["MCfs"]][["intr"]][["report"]]`）。しかし，実行条件と非実行条件のいずれでも，理解なし条件の判断対象人物の方が理解あり条件の人物よりも有意に迷惑を理解していないと評価されたことが確認された（実行条件：`r t_test_mcfs_DO`; 非実行条件：`r t_test_mcfs_DONT`）。このことから，判断対象人物の迷惑への理解に関する操作が意図した通りに機能したと判断した。
+
+<br>
+
+## 印象形成 {-}
+
+```{r mean-cold-s2}
+m_cold_do_no <-
+  dat_combined %>% 
+  dplyr::filter(act == "DO" & Mental == "NO") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_cold_dont_no <-
+  dat_combined %>% 
+  dplyr::filter(act == "DONT" & Mental == "NO") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_cold_do_fs <-
+  dat_combined %>% 
+  dplyr::filter(act == "DO" & Mental == "FS") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_cold_dont_fs <-
+  dat_combined %>% 
+  dplyr::filter(act == "DONT" & Mental == "FS") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_cold_do_uf <-
+  dat_combined %>% 
+  dplyr::filter(act == "DO" & Mental == "UF") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_cold_dont_uf <-
+  dat_combined %>% 
+  dplyr::filter(act == "DONT" & Mental == "UF") %>% 
+  dplyr::summarise(mean = mean(cold)) %>% 
+  sprintf(fmt = '%.2f')
+```
+
+```{r t-test-cold-s2}
+t_test_cold_dont <-
+  dat_combined %>% 
+  dplyr::filter(act == "DONT" & Mental %in% c("FS", "UF")) %>% 
+  t.test(cold ~ Mental, data = ., paired = TRUE, var.equal = FALSE) %>% 
+  papaja::apa_print()
+```
+
+研究1と同様に，人物の冷たさに関する仮説1の検証を行った。人物の冷たさの評価に関する2要因混合分散分析を行った結果，有意な交互作用が検出された（`r anova_results[["cold"]][["intr"]][["report"]]`）。単純主効果検定の結果，情報なし条件において，迷惑行為者（*M* = `r m_cold_do_no`）の方が非実行者（*M* = `r m_cold_dont_no`）よりも冷たいと評価されており（`r anova_results[["cold"]][["smplmain"]][["act"]][["at NO"]][["report"]]`），迷惑行為をしなければ冷たいと評価されにくくなるという前提が満たされていることが確認された。さらに迷惑行為をしないことがもたらすこの効果は，判断対象人物の迷惑への理解の有無に調整されていた。判断対象人物が迷惑を理解していた場合，非実行者が冷たいと評価される程度は実行者よりも低かった（*M* = `r m_cold_do_fs` vs. *M* = `r m_cold_dont_fs`, `r anova_results[["cold"]][["smplmain"]][["act"]][["at FS"]][["report"]]`）。しかし，迷惑を理解していない場合では，迷惑行為の有無の間で冷たさの評価の有意差を検出できなかった（*M* = `r m_cold_do_uf` vs. *M* = `r m_cold_dont_uf`, `r anova_results[["cold"]][["smplmain"]][["act"]][["at UF"]][["report"]]`）。これに加え，非実行条件における迷惑への理解の状態の単純主効果も有意であったことから（`r anova_results[["cold"]][["smplmain"]][["Mental"]][["at DONT"]][["report"]]`），理解の有無の間で比較を行った。その結果，迷惑を理解していない人物（*M* = `r m_cold_dont_uf`）は理解している人物（*M* = `r m_cold_dont_fs`）よりも有意に冷たいと評価されていた（`r t_test_cold_dont[["full_result"]]`）。これらの結果から研究1と同様に仮説1は支持された。つまり，無神経な人物はたとえ迷惑行為を実行しなかったとしても，冷たいと評価されることを免れないことが再度示された。
+
+```{r mean-incomp-s2}
+m_incomp_do_fs <-
+  dat_combined %>% 
+  dplyr::filter(act == "DO" & Mental == "FS") %>% 
+  dplyr::summarise(mean = mean(incomp)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_incomp_do_uf <-
+  dat_combined %>% 
+  dplyr::filter(act == "DO" & Mental == "UF") %>% 
+  dplyr::summarise(mean = mean(incomp)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_incomp_dont_fs <-
+  dat_combined %>% 
+  dplyr::filter(act == "DONT" & Mental == "FS") %>% 
+  dplyr::summarise(mean = mean(incomp)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_incomp_dont_uf <-
+  dat_combined %>% 
+  dplyr::filter(act == "DONT" & Mental == "UF") %>% 
+  dplyr::summarise(mean = mean(incomp)) %>% 
+  sprintf(fmt = '%.2f')
+```
+
+```{r t-test-incomp-s2}
+t_test_incomp_do <-
+  dat_combined %>% 
+  dplyr::filter(act == "DO" & Mental %in% c("FS", "UF")) %>% 
+  dplyr::arrange(act, Mental, ID) %>% 
+  t.test(
+    incomp ~ Mental, data = ., paired = TRUE, var.equal = FALSE
+  ) %>% 
+  papaja::apa_print()
+
+t_test_incomp_dont <-
+  dat_combined %>% 
+  dplyr::filter(act == "DONT" & Mental %in% c("FS", "UF")) %>% 
+  dplyr::arrange(act, Mental, ID) %>% 
+  t.test(
+    incomp ~ Mental, data = ., paired = TRUE, var.equal = FALSE
+  ) %>% 
+  papaja::apa_print()
+```
+
+続いて能力評価に関する仮説2を検証した。判断対象人物に対する能力評価に関する2要因混合分散分析を行ったところ，交互作用が有意であった（`r anova_results[["incomp"]][["intr"]][["report"]]`）。実行条件でも非実行条件でも，迷惑への理解の有無の単純主効果が有意であったため（実行条件：`r anova_results[["incomp"]][["smplmain"]][["Mental"]][["at DO"]][["report"]]`; 非実行条件：`r anova_results[["incomp"]][["smplmain"]][["Mental"]][["at DONT"]][["report"]]`），実行の有無別に理解あり条件と理解なし条件の比較を行った。その結果，実行条件でも非実行条件でも，理解なし条件の人物への能力評価が理解あり条件の人物よりも有意に低かった（実行条件：*M* = `r m_incomp_do_fs` vs. *M* = `r m_incomp_do_uf`, `r t_test_incomp_do$full_result`; 非実行条件：*M* = `r m_incomp_dont_fs` vs. *M* = `r m_incomp_dont_uf`, `r t_test_incomp_dont$full_result`）。これらの結果から，迷惑行為の有無にかかわらず，迷惑を理解していない人物は理解している場合よりも能力が低いと評価されることが示され，仮説2は支持された。
+
+<br>
+
+## 非人間化 {-}
+
+```{r mean-deh-s2}
+m_deh_do_fs <-
+  dat_combined %>% 
+  dplyr::filter(act == "DO" & Mental == "FS") %>% 
+  dplyr::summarise(mean = mean(deh)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_deh_do_uf <-
+  dat_combined %>% 
+  dplyr::filter(act == "DO" & Mental == "UF") %>% 
+  dplyr::summarise(mean = mean(deh)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_deh_dont_fs <-
+  dat_combined %>% 
+  dplyr::filter(act == "DONT" & Mental == "FS") %>% 
+  dplyr::summarise(mean = mean(deh)) %>% 
+  sprintf(fmt = '%.2f')
+
+m_deh_dont_uf <-
+  dat_combined %>% 
+  dplyr::filter(act == "DONT" & Mental == "UF") %>% 
+  dplyr::summarise(mean = mean(deh)) %>% 
+  sprintf(fmt = '%.2f')
+```
+
+```{r t-test-deh-s2}
+t_test_deh_do <- 
+  dat_combined %>% 
+  dplyr::filter(act == "DO" & Mental %in% c("FS", "UF")) %>% 
+  dplyr::arrange(act, Mental, ID) %>% 
+  t.test(deh ~ Mental, data = ., paired = TRUE, var.equal = FALSE) %>% 
+  papaja::apa_print()
+
+t_test_deh_dont <-
+  dat_combined %>% 
+  dplyr::filter(act == "DONT" & Mental %in% c("FS", "UF")) %>% 
+  dplyr::arrange(act, Mental, ID) %>% 
+  t.test(deh ~ Mental, data = ., paired = TRUE, var.equal = FALSE) %>% 
+  papaja::apa_print()
+```
+
+
+
+```{r additional-deh-s2}
+deh_sub <-
+  dat %>%
+  dplyr::transmute(
+    ID = ID,
+    act = act,
+    Mental = Mental,
+    pos_deh = rowMeans(
+      dplyr::select(.,
+                    deh3, deh4, deh11, deh12)
+    ) - rowMeans(
+      dplyr::select(.,
+                    deh5, deh6, deh13, deh14
+                    )
+    ),
+    neg_deh = rowMeans(
+      dplyr::select(.,
+                    deh7, deh8, deh15, deh16)
+    ) - rowMeans(
+      dplyr::select(.,
+                    deh1, deh2, deh9, deh10)
+    )
+  ) %>% 
+  dplyr::arrange(act, Mental, ID)
+
+
+deh_sub %>% 
+  dplyr::group_by(act, Mental) %>% 
+  summarise(avg = mean(pos_deh), .groups = "drop") %>% 
+  {
+    dplyr::filter(., act == "DONT" & Mental == "FS") %>% 
+      .$avg %>% 
+      sprintf(fmt = "%.2f") ->> m_deh_pos_dont_fs
+    
+    dplyr::filter(., act == "DONT" & Mental == "UF") %>% 
+      .$avg %>% 
+      sprintf(fmt = "%.2f") ->> m_deh_pos_dont_uf
+  }
+
+deh_sub %>% 
+  dplyr::group_by(act, Mental) %>% 
+  summarise(avg = mean(neg_deh), .groups = "drop") %>% 
+  {
+    dplyr::filter(., act == "DONT" & Mental == "FS") %>% 
+      .$avg %>% 
+      sprintf(fmt = "%.2f") ->> m_deh_neg_dont_fs
+    
+    dplyr::filter(., act == "DONT" & Mental == "UF") %>% 
+      .$avg %>% 
+      sprintf(fmt = "%.2f") ->> m_deh_neg_dont_uf
+  }
+  
+t_test_deh_pos_dont <-
+  deh_sub %>% 
+  dplyr::filter(act == "DONT" & Mental %in% c("FS", "UF")) %>%
+  t.test(pos_deh~Mental, data = ., paired = TRUE, var.equal = FALSE) %>% 
+  papaja::apa_print()
+
+t_test_deh_neg_dont <-
+  deh_sub %>% 
+  dplyr::filter(act == "DONT" & Mental %in% c("FS", "UF")) %>%
+  t.test(neg_deh~Mental, data = ., paired = TRUE, var.equal = FALSE) %>% 
+  papaja::apa_print()
+```
+
+仮説3を検証するため，判断対象人物の動物的に非人間化する程度に関して2要因混合分散分析を行った。交互作用が有意であり（`r anova_results[["deh"]][["intr"]][["report"]]`），実行条件でも非実行条件でも，判断対象人物の迷惑への理解の状態の単純主効果が有意であった（実行条件：`r anova_results[["deh"]][["smplmain"]][["Mental"]][["at DO"]][["report"]]`; 非実行条件：`r anova_results[["deh"]][["smplmain"]][["Mental"]][["at DONT"]][["report"]]`）。そのため，迷惑行為の有無ごとに，理解あり条件と理解なし条件の間で判断対象人物を動物的に非人間化する程度を比較する *t* 検定を行った。その結果，判断対象人物が迷惑行為を実行しなかった場合，迷惑を理解していない人物（*M* = `r m_deh_dont_uf`）の方が理解している人物（*M* = `r m_deh_dont_fs`）よりも有意に動物的に非人間化されていた（`r t_test_deh_dont$full_result`）。その一方で，迷惑行為を実行した場合，迷惑を理解している人物（*M* = `r m_deh_do_fs`）の方が，理解していない人物（*M* = `r m_deh_do_uf`）よりも有意に動物的に非人間化されていた（`r t_test_deh_do$full_result`）。
+
+しかし，この結果は判断対象人物を動物的に非人間化する程度の実態を反映していない可能性がある。非人間化尺度の特性語には望ましさの高いものと低いものが半数ずつ含まれていたことを利用し，特性語の望ましさの高低に分けて同様の分析を行った。その結果，非実行条件において，望ましい特性語と望ましくない特性語の当てはまりの良さでは，自身の行動の影響に関する理解の有無の及ぼす効果の向きが逆転していた。すなわち，望ましい動物的特性に関しては，迷惑を理解して実行しなかった人物（*M* = `r m_deh_pos_dont_fs`）の方が，理解せずに実行しなかった人物（*M* = `r m_deh_pos_dont_uf`）よりも有意に当てはまると評価されていた（`r t_test_deh_pos_dont$full_result`。その一方で，望ましくない動物的特性に関しては，影響を理解している人物（*M* = `r m_deh_neg_dont_fs`）と比較して，理解していない人物（*M* = `r m_deh_neg_dont_uf`）の方が有意により当てはまると評価されていた（`r t_test_deh_neg_dont$full_result`）。この結果は，迷惑を理解して，迷惑行為をしないようにした望ましい人物が，ポジティブな意味で動物化されたことになる。しかし，動物化される対象は，知的能力が低いと評価される傾向があることと，研究1および本予備的研究の能力評価に関する結果から，このような人物が動物のように見なされるとは考えにくい。むしろ，参加者は人物の全体的な望ましさに基づいて，望ましい特性語と望ましくない特性語の当てはまりの良さを判断したと考える。これらのことから，ここでの非人間化の結果は判断対象人物を動物視する程度よりもむしろ，人物の全体的な望ましさを反映していると判断した。そのため，無神経な他者に対する動物的非人間化についての仮説が支持されたかどうかの判断は，ここでは保留とする。
+
+<br>
+
+## 印象形成と行動予測，社会的距離，非難の関係 {-}
+
+```{r data-sem-s2}
+data_sem <- 
+  dat_combined %>% 
+  dplyr::mutate(
+    dplyr::across(
+      c(cold, fore, dist),
+      scale
+    )
+  ) %>% 
+  dplyr::mutate(
+    act = dplyr::case_when(
+      act == "DONT" ~ 0, 
+      act == "DO" ~ 1
+    )
+  )
+```
+
+
+```{r mediateion-dist-s2-act, cache=FALSE, dependson="data-sem-s2", error=FALSE, include=FALSE}
+path_model_dist <- '
+cold ~ ac*act
+fore ~ cf*cold + af*act
+dist ~ fd*fore + ad*act + cd*cold
+
+# indirect effects of act
+ind1 := ac*cd
+ind2 := af*fd
+ind3 := ind1 + ind2 + ac*cf*fd
+
+# effect of percieved coldness on distance
+indcold := cf*fd
+totalcold := indcold + cd
+
+# total effects of act
+total := ind3 + ad
+'
+
+sem_dist_fs <-
+  data_sem %>% 
+  dplyr::filter(Mental == "FS") %>% 
+  lavaan::sem(
+    model = path_model_dist, 
+    data = ., 
+    fixed.x = F,
+    auto.var = T, 
+    se = "bootstrap", 
+    bootstrap = 5000
+  )
+
+summary_dist_fs <-
+  summary(
+    sem_dist_fs,
+    fit.measures = F,
+    standardized = F,
+    ci = T,
+    rsquare = T
+  )
+
+
+sem_dist_uf <-
+  data_sem %>% 
+  dplyr::filter(Mental == "UF") %>% 
+  lavaan::sem(
+    model = path_model_dist, 
+    data = ., 
+    fixed.x = F,
+    auto.var = T, 
+    se = "bootstrap", 
+    bootstrap = 5000
+  )
+
+summary_dist_uf <-
+  summary(
+    sem_dist_uf,
+    fit.measures = F,
+    standardized = F,
+    ci = T,
+    rsquare = T
+  )
+
+```
+
+
+```{r mediateion-blm-s2-act, cache=FALSE, dependson="data-sem-s2", error=FALSE, include=FALSE}
+path_model_blm <- '
+cold ~ ac*act
+fore ~ cf*cold + af*act
+blm ~ fb*fore + ab*act + cb*cold
+
+# indirect effects of act
+ind1 := ac*cb
+ind2 := af*fb
+ind3 := ind1 + ind2 + ac*cf*fb
+
+# effect of percieved coldness on blame
+indcold := cf*fb
+totalcold := indcold + cb
+
+# total effects of act
+total := ind3 + ab
+'
+
+sem_blm_fs <-
+  data_sem %>% 
+  dplyr::filter(Mental == "FS") %>% 
+  lavaan::sem(
+    model = path_model_blm, 
+    data = ., 
+    fixed.x = F,
+    auto.var = T, 
+    se = "bootstrap", 
+    bootstrap = 5000
+  )
+
+summary_blm_fs <-
+  summary(
+    sem_blm_fs,
+    fit.measures = F,
+    standardized = F,
+    ci = T,
+    rsquare = T
+  )
+
+
+sem_blm_uf <-
+  data_sem %>% 
+  dplyr::filter(Mental == "UF") %>% 
+  lavaan::sem(
+    model = path_model_blm, 
+    data = ., 
+    fixed.x = F,
+    auto.var = T, 
+    se = "bootstrap", 
+    bootstrap = 5000
+  )
+
+summary_blm_uf <-
+  summary(
+    sem_blm_uf,
+    fit.measures = F,
+    standardized = F,
+    ci = T,
+    rsquare = T
+  )
+
+```
+
+迷惑行為者を冷たいと評価し，この評価に応じて将来迷惑行為をより実行しやすいと予測することを介して，迷惑行為者への社会的距離を増大させるという，仮説4の検証を行った。この目的のために，迷惑への理解の有無別に，迷惑行為を実行した人物をより冷たいと評価し，それによって迷惑行為を今後実行しやすいと考え，社会的距離を増大させることを予測する媒介モデルを検討した。このモデルの推定には，Rのlavaanパッケージ [@rosseel2012lavaanPackage] を使用し，間接効果の信頼区間の推定には，リサンプリング数5000回のブートストラップ法を用いた。その結果を Figure S\@ref(fig:med-dist-s2) に示した。
+
+判断対象人物が迷惑を理解していた場合，迷惑行為をした人物に対して社会的距離を増大させる過程で，判断対象人物をより冷たいと評価することに応じて，将来の迷惑行為の確率をより高く見積もることの間接効果が認められた（$\beta$ = `r summary_dist_fs[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select(est) %>% sprintf(fmt = '%.2f')`, 95% CI [`r summary_dist_fs[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select('ci.lower') %>% sprintf(fmt = '%.2f')`, `r summary_dist_fs[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select('ci.upper') %>% sprintf(fmt = '%.2f')`]）。ただし，社会的距離の増大に対する将来の迷惑行為の予測による説明は有意でなかった（$\beta$ = `r summary_dist_fs[["pe"]] %>% dplyr::filter(label == "fd") %>% dplyr::select(est) %>% sprintf(fmt = '%.2f')`, 95% CI [`r summary_dist_fs[["pe"]] %>% dplyr::filter(label == "fd") %>% dplyr::select('ci.lower') %>% sprintf(fmt = '%.2f')`, `r summary_dist_fs[["pe"]] %>% dplyr::filter(label == "fd") %>% dplyr::select('ci.upper') %>% sprintf(fmt = '%.2f')`]）。そのためこの間接効果は主に，知覚された判断対象人物の冷たさが将来の迷惑行為の予測を媒介せずに，社会的距離の増大を直接説明することに担われていた点に留意が必要である。実際，判断対象人物の冷たさが迷惑行為の予測を介して社会的距離の増大を予測する間接効果は有意でなかった（$\beta$ = `r summary_dist_fs[["pe"]] %>% dplyr::filter(label == "indcold") %>% dplyr::select(est) %>% sprintf(fmt = '%.2f')`, 95% CI [`r summary_dist_fs[["pe"]] %>% dplyr::filter(label == "indcold") %>% dplyr::select('ci.lower') %>% sprintf(fmt = '%.2f')`, `r summary_dist_fs[["pe"]] %>% dplyr::filter(label == "indcold") %>% dplyr::select('ci.upper') %>% sprintf(fmt = '%.2f')`]）。判断対象人物が迷惑を理解していなかった場合，冷たさの知覚と迷惑行為の予測を媒介した間接効果は認められなかった（$\beta$ = `r summary_dist_uf[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select(est) %>% sprintf(fmt = '%.2f')`, 95% CI [`r summary_dist_uf[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select('ci.lower') %>% sprintf(fmt = '%.2f')`, `r summary_dist_uf[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select('ci.upper') %>% sprintf(fmt = '%.2f')`]）。このことから，迷惑行為者への社会的距離の増大が，相手の冷たさに応じた将来的な迷惑行為の予測を媒介する効果は，行為者が迷惑を理解していない場合の方が小さいことが示され，仮説4は支持された。しかし，迷惑行為の予測が社会的距離の増大を説明する効果は検出できなかったことには留意する必要がある。
+
+続いて，仮説4で検証したものと同様の媒介過程を経て，迷惑行為者への非難を増大させる過程を検証するため，仮説4で検証した媒介モデルのうち，従属変数を非難に置き換えたものを検討した。その結果を，figure S\@ref(fig:med-blm-s2) に示した。判断対象人物が迷惑を理解していた場合，その人物が迷惑行為をしたことで非難を強める過程で，判断対象人物の冷たさに応じて将来の迷惑行為実行確率をより高く見積もることを媒介する有意な間接効果が見られた（$\beta$ = `r summary_blm_fs[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select(est) %>% sprintf(fmt = '%.2f')`, 95% CI [`r summary_blm_fs[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select('ci.lower') %>% sprintf(fmt = '%.2f')`, `r summary_blm_fs[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select('ci.upper') %>% sprintf(fmt = '%.2f')`]）。しかし，この間接効果は判断対象人物が迷惑を理解していなかった場合には認められなかった（$\beta$ = `r summary_blm_uf[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select(est) %>% sprintf(fmt = '%.2f')`, 95% CI [`r summary_blm_uf[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select('ci.lower') %>% sprintf(fmt = '%.2f')`, `r summary_blm_uf[["pe"]] %>% dplyr::filter(label == "ind3") %>% dplyr::select('ci.upper') %>% sprintf(fmt = '%.2f')`]）。このことから，迷惑行為者を非難する過程で，相手をより冷たく評価し，それに応じて将来迷惑行為をしやすいと考える媒介効果は，行為者が迷惑を理解していない場合の方が小さいことが示され，仮説5は支持された。
+
+
+```{r med-dist-s2, fig.cap="迷惑行為の実行が人物への印象に基づく社会的距離の確保を増大させる媒介過程", eval=TRUE}
+include_graphics("./output/med_dist.png", error = FALSE)
+```
+
+```{r med-blm-s2, fig.cap="迷惑行為の実行が人物への印象に基づく非難を増大させる媒介過程", eval=TRUE}
+include_graphics("./output/med_blm.png", error = FALSE)
+```
+
+
+
