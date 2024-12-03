@@ -1,0 +1,242 @@
+---
+title: "Study2 Method"
+output:
+  bookdown::gitbook: default
+  bookdown::word_document2:
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/document_template.docx"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+# bibliography: "/home/rstudio/NuisanceStudy/reference/references.bib"
+csl: "/home/rstudio/NuisanceStudy/reference/apa.csl"
+---
+
+```{r setup-method-s2, include=FALSE, results='hide'}
+knitr::opts_chunk$set(echo = FALSE)
+source("/home/rstudio/NuisanceStudy/study2/.Rprofile", encoding = "utf-8")
+```
+
+本研究で使用したQualtrics質問票は，以下のリンク先で確認できる。
+
+https://nagoyapsychology.qualtrics.com/jfe/form/SV_1XiPOtXJ5XZTiYu
+
+
+```{r AboutData-s2, include=FALSE, results='hide'}
+dat_combined %>%
+  dplyr::filter(gender == "1" & act == "DO" & Mental == "FS" | gender == "1" & act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_male_participants_s2
+
+dat_combined %>%
+  dplyr::filter(gender == "2" & act == "DO" & Mental == "FS" | gender == "2" & act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_female_participants_s2
+
+dat_combined %>%
+  dplyr::filter(act == "DO" & Mental == "FS") %>%
+  nrow() -> num_DO_participants_s2
+
+dat_combined %>%
+  dplyr::filter(act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_DONT_participants_s2
+
+dat_combined %>%
+  dplyr::filter(act == "DO" & Mental == "FS" | act == "DONT" & Mental == "FS") %>%
+  dplyr::select(age) %>%
+  {
+    colMeans(.) ->> mean_age_s2
+    sqrt(var(.) * ((nrow(.) - 1) / nrow(.))) ->> sd_age_s2
+  }
+```
+
+**参加者**　クラウドソーシングサービスのLancers上で募集した，18歳以上の日本国籍保有者150名が同意の上で実験に参加した。このうち，分析に使用した有効回答者数は`r num_male_participants_s2+num_female_participants_s2`名（男性`r num_male_participants_s2`名，女性`r num_female_participants_s2`名）だった。また，回答者の平均年齢（標準偏差）は`r round(mean_age_s2, 2)`歳（`r round(sd_age_s2, 2)`）であった。まず，全参加者データのうち，同一IPアドレスからの3回の回答があった1件に関しては，3回目のデータを分析から除外した。また，Qualtricsの設定の問題により，報酬を支払った参加者と結びつけられない回答データが37件あった。そのため，これら37件は分析からは除外した。最終的に，実行条件に割り当てられた人数は`r num_DO_participants_s2`名，非実行条件に割り当てられた人数は`r num_DONT_participants_s2`名であった。
+
+```{r alpha-s2, results='hide', include=FALSE}
+alpha_cold <-
+  dat %>% 
+  dplyr::select(prsn1,prsn2,prsn5,prsn6) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_incomp <-
+  dat %>% 
+  dplyr::select(prsn3,prsn4,prsn7,prsn8) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_uh <-
+  dat %>% 
+  dplyr::transmute(
+    deh3 = deh3,
+    deh4 = deh4,
+    deh7 = deh7,
+    deh8 = deh8,
+    deh11 = deh11,
+    deh12 = deh12,
+    deh15 = deh15, 
+    deh16 = deh16,
+    deh1 =  -deh1, 
+    deh2 =  -deh2,
+    deh5 =  -deh5,
+    deh6 =  -deh6,
+    deh9 =  -deh9,
+    deh10 = -deh10, 
+    deh13 = -deh13,
+    deh14 = -deh14
+  ) %>% 
+  psych::alpha(check.keys = TRUE) %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  abs() %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_fore <-
+  dat %>% 
+  dplyr::select(contains("fore")) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_blm <-
+  dat %>% 
+  dplyr::select(contains("blm")) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_dist <-
+    dat %>% 
+  dplyr::select(contains("dist")) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+
+```
+
+**質問項目**　判断対象人物への印象の指標として，人物への印象の測定項目を修正し，冷たさの次元（$\alpha$ = `r alpha_cold`）では @hayashi1978twodimensions の「いじわるな－親切な」「人の悪い－人の良い」に「乱暴な－優しい」「攻撃的な－おとなしい」を加えた。能力の低さの次元（$\alpha$ = `r alpha_incomp`）では，@hayashi1978twodimensions の「知的でない－知的な」に，「無能な－有能な」「不注意な－注意深い」「いい加減な－丁寧な」を加えた。参加者は研究1と同様に，それぞれの対になった特性語のどちらが判断対象人物により当てはまるかを1から7で回答した。
+
+非人間化の指標については，多数の特性語について「動物と比較した際に人間にのみ当てはまる程度」（Uniquely Human: UH，1：動物にも人間にも当てはまる，7：人間にのみ当てはまる），「機械と比較した際に人間にのみ当てはまる程度」（Human Nature: HN，1：機械にも人間にも当てはまる，7：人間にのみ当てはまる），「望ましさ」（1：全く望ましくない，7：非常に望ましい）の3つの側面について評定を得た先行研究 [@sharma2021empiricalstudy] の結果をもとに，人間性に関連する16個の特性語を使用した。これらの特性語は，2（UHの高低）×2（HNの高低）×2（望ましさの高低）に組み合わせによって，8グループに2語ずつ分類される。各グループに属する特性語を Table S\@ref(tab:dehum-items) に示す。参加者は人間性についての各特性語が判断対象人物に当てはまる程度を7件法で回答した（1 = 全く当てはまらない，7 = 非常によく当てはまる，$\alpha$ = `r alpha_uh`）。これら16個の特性語を用いて，判断対象人物が人間であるよりも動物に近いという形で非人間化される程度を表す際には，UH-低に分類される8項目の平均値とUH-高に分類される8項目の平均値の差を求める。この差が正の方向に大きな値をとるほど，動物的に非人間化される程度が大きいことを意味する。
+
+非人間化の測定にあたってUHとNHと望ましさの3次元を考慮して特性語を選出したことで，UH以外の次元との交絡を防ぐことを意図した。UH-低に属する8個の特性語（1－7での評定でのレンジは2.15－3.51）には，HN-高の特性語（5.21－6.03）とNH-低の特性語（3.02－3.90）が同数ずつ含まれている。同様に，UH-高に属する8個の特性語（4.05－5.85）にも，HN-高の特性語（5.15－6.23）とHN-低の特性語（2.73－3.55）が同数ずつ含まれる。これは望ましさの観点でも同様である。UH-低の特性語には，望ましいもの（5.69－6.36）と望ましくないもの（2.21－2.46）が同数ずつ含まれ，UH-高の特性語にもこれが成り立っている（望ましい：5.54－6.22，望ましくない：1.44－2.33）。これにより，UH-低とUH-高の差得点を算出する際に，平均化処理の過程で各特性語のHNと望ましさの影響が相殺され，評定値にこれらが交絡するのを防ぐことが見込まれた。
+
+<br>
+
+```{r dehum-items, cache=FALSE, echo=FALSE}
+tibble(
+  desirability = c(
+    rep(factor("望ましさ高"), 4),
+    rep(factor("望ましさ低"), 4)
+  ),
+  uniqueness = c(
+    rep(c(
+      "HN高", "HN高", "HN低", "HN低"  
+    ), 2)
+  ) %>% factor(),
+  特性語1 = c(
+    "同情心がある",
+    "想像力豊かだ",
+    "公平な",
+    "きちんとした",
+    "口汚い",
+    "軽率な",
+    "冷淡な",
+    "人情味のない"
+  ),
+  特性語2 = c(
+    "好奇心旺盛な",
+    "生き生きとした",
+    "器用な",
+    "利口な",
+    "狡猾な",
+    "野蛮な",
+    "非情な",
+    "無慈悲な"
+  ),
+) %>% 
+  flextable::flextable() %>% 
+  flextable::merge_v(j = 1, part = "body") %>% 
+  flextable::merge_v(j = 2, part = "body") %>% 
+  flextable::set_header_labels(
+    desirability = " ",
+    uniqueness = " ",
+    特性語1 = "UH高",
+    特性語2 = "UH低"
+  ) %>% 
+  flextable::border_remove() %>% 
+  flextable::hline_top(
+    part = "header",
+    border = officer::fp_border(width = 2)
+  ) %>% 
+  flextable::hline_top(
+    j = 1:4,
+    part = "body",
+    border = officer::fp_border(width = 1)
+  ) %>% 
+  flextable::hline(
+    i = 4,
+    j = 1:4,
+    part = "body",
+    border = officer::fp_border(width = 1)
+  ) %>% 
+  flextable::hline(
+    i = 8,
+    j = 3:4,
+    part = "body",
+    border = officer::fp_border(width = 1)
+  ) %>% 
+  #結合した分だけ2列目の下端が上がっているための処理
+  flextable::hline(
+    i = 8,
+    j = 2,
+    part = "body",
+    border = officer::fp_border(width = 1)
+  ) %>%
+  # # 結合した分だけ1列目の下端が上がっているための処理
+  flextable::hline(
+    i = 8,
+    j = 1,
+    part = "body",
+    border = officer::fp_border(width = 1)
+  ) %>%
+  # flextable::vline(
+  #   j = 3,
+  #   part = "all",
+  #   border = officer::fp_border(width = 1)
+  # ) %>%
+  flextable::align(j = 1:4, align = "center", part = "body") %>%
+  flextable::align(j = 3:4, align = "center", part = "header") %>% 
+  flextable::width(
+    j = 1,
+    width = 0.8,
+  ) %>%
+  flextable::width(
+    j = 2,
+    width = 0.6,
+  ) %>%
+  flextable::width(
+    j = 3:4,
+    width = 1.3,
+  ) %>% 
+  flextable::bg(i = c(3,4,7,8), j = 2:4, bg = "grey", part = "body") %>%
+  flextable::set_caption("予備的研究で使用した非人間化の尺度項目")
+```
+
+<br>
+
+判断対象人物の将来の行動に関する予測を検討するため，シナリオで題材にした迷惑行為とは別の4つの迷惑行為を，判断対象人物が今後実行する可能性について評価するように求めた。ここで予測することを求めた別の迷惑行為は，@yoshida1999meiwaku1 挙げられた迷惑行為群のうちから，「ガムを路上に吐き捨てる」，「指定場所以外での自転車の駐輪」，「狭い通路のすれ違う際に道を譲らない」，「電車内で他人の足を踏んで気づかないふりをする」の4つを使用した。参加者は，シナリオ中の場面の次の日に判断対象人物がこれら4つの行為を行う可能性をそれぞれ7件法で回答した（1 = 絶対に行わない，7 = 必ず行う，$\alpha$ = `r alpha_fore`）。
+
+判断対象人物との間に置きたいと思う社会的距離を示すために，参加者は3項目の内容を判断対象人物に対してどの程度思っているかを回答した（1 = 全くそう思わない，7 = 強くそう思う）。各項目はそれぞれ，「電車内でその人が隣に座ってきても嫌ではない」「知り合いだった場合，自分からこの人に挨拶する」「この人と目を合わせても平気だ」であった（$\alpha$ = `r alpha_dist`）。
+
+判断対象人物を非難する程度を測定するため，3つの項目に回答するように参加者に求めた。これらの項目はそれぞれ，「判断対象人物が行ったことに関して，あなたは判断対象人物をどの程度非難しますか」（1 = 全く非難しない，7 = 非常に強く非難する），「判断対象人物が行ったことに関して，判断対象人物は咎められるべきだとあなたは思いますか」（1 = 全くそうは思わない，7 = 強くそう思う），「あなたは，判断対象人物が今後不幸に見舞われてしかるべきだと思いますか」（1 = 全くそうは思わない，7 = 強くそう思う）であった（$\alpha$ = `r alpha_blm`）。
+
+操作確認については，研究1と同一のものを使用した。
+
+**手続き**　使用したシナリオは，研究1のものと同一である。また，実験条件の設定や実験の実施手順も研究1のものと概ね同一である。ただし，質問項目の呈示順序に関する2点の変更を加えた。第1の変更点は，操作確認を全従属変数の測定の後に行うようにしたことである。したがって，参加者は1つのシナリオを読むごとに，登場人物に関する質問項目群に回答し，続いて操作確認の項目に回答した。第2の変更点は，判断対象人物の行動予測，判断対象人物への非難，および非人間化の質問項目がまずランダムな順に呈示され，続いて残りの質問項目がランダムな順に呈示されるようにしたことである。
+
+**倫理的配慮**　本予備研究は，著者らの所属する機関の研究倫理委員会の承認を得て実施された。

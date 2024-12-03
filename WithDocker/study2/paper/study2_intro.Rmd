@@ -1,0 +1,17 @@
+---
+title: "Study2 Introduction"
+output:
+  bookdown::html_document2: default
+  bookdown::word_document2: 
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/document_template.docx"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+suppress-bibliography: yes
+# bibliography: "/home/rstudio/NuisanceStudy/reference/references.bib"
+# csl: "/home/rstudio/NuisanceStudy/reference/apa.csl"
+---
+
+<br>
+
+本研究は研究2の予備的研究という位置づけであり，研究1で用いた人物評価の指標を改善したうえで研究1の追試を行う。これに加え，対人認知の基本次元に関する評価から派生した他の評価を検討する。自身の行動による悪影響を理解していない，無神経な人物への否定的評価は，基本次元である有能さと温かさ以外の他の側面でも広範にみられると考える。したがって，基本次元による対人評価と関連するものとして非人間化，さらに対人認知の機能の観点から予測と対処に関する検討も行う。これにより，無神経であること自体に基づく否定的な印象形成を明らかにするにとどまらず，実際に人々が無神経な他者に対してどのように対応するのかを明らかにすることを試みる。本予備研究では仮説1から仮説5を検証する。
