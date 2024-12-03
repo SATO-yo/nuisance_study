@@ -1,0 +1,186 @@
+---
+title: "迷惑行為の悪影響を理解していない人物に対する認知${}^1$, ${}^2$, ${}^3$"
+subtitle: "Person perception of agents who lack understanding of the potential harm of nuisance"
+output:
+  bookdown::word_document2: 
+    number_sections: false
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/JJP_template.docx"
+  bookdown::html_document2: default 
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+suppress-bibliography: yes
+bibliography: "/home/rstudio/NuisanceStudy/reference/references.bib"
+csl: "/home/rstudio/NuisanceStudy/reference/apa.csl"
+---
+
+<br>
+
+## Abstract
+
+```{r abstract-en, child="/home/rstudio/NuisanceStudy/whole_paper/abstract_en.Rmd"}
+
+```
+
+<br>
+
+## Keywords:
+
+nuisance, person perception, warmth and competence, dehumanization, mentalizing
+
+\newpage
+
+## Abstractの日本語訳
+
+```{r abstract-jp, child="/home/rstudio/NuisanceStudy/whole_paper/abstract_ja.Rmd"}
+
+```
+
+<br>
+
+## Keywordsの日本語訳
+
+迷惑行為，対人認知，温かさと有能さ，非人間化，メンタライジング
+
+\newpage
+
+```{r introduction, child="/home/rstudio/NuisanceStudy/Intro_Discussion/paper/Intro.Rmd"}
+
+```
+
+<br>
+
+# 研究 1 {.unnumbered}
+
+<br>
+
+## 方法 {.unnumbered}
+
+```{r study1-method, child="/home/rstudio/NuisanceStudy/study1/paper/study1_method.Rmd"}
+
+```
+
+<br>
+
+## 結果 {.unnumbered}
+
+```{r study1-result, child="/home/rstudio/NuisanceStudy/study1/paper/study1_result.Rmd"}
+
+```
+
+<br>
+
+## 考察 {.unnumbered}
+
+```{r study1-discussion, child="/home/rstudio/NuisanceStudy/study1/paper/study1_discussion.Rmd"}
+
+```
+
+<br>
+
+# 研究 2 {.unnumbered}
+
+<br>
+
+```{r study3-intro, child="/home/rstudio/NuisanceStudy/study3/paper/study3_intro.Rmd"}
+
+```
+
+<br>
+
+## 方法 {.unnumbered}
+
+```{r study3-method, child="/home/rstudio/NuisanceStudy/study3/paper/study3_method.Rmd"}
+
+```
+
+<br>
+
+## 結果 {.unnumbered}
+
+```{r study3-result, child="/home/rstudio/NuisanceStudy/study3/paper/study3_result.Rmd"}
+
+```
+
+<br>
+
+# 総合考察 {.unnumbered}
+
+<br>
+
+```{r general-discussion, child="/home/rstudio/NuisanceStudy/Intro_Discussion/paper/Gdiscussion.Rmd"}
+
+```
+
+<br>
+
+# 利益相反
+
+<br>
+
+本論文に関して開示すべき利益相反関連事項はない。
+
+\newpage
+
+# 引用文献 {.unnumbered}
+
+<!-- \noindent -->
+
+<!-- \begingroup -->
+
+<!-- \setlength{\parindent}{-0.3in} -->
+
+<!-- \setlength{\leftskip}{0.2in} -->
+
+<!-- \setlength{\parskip}{8pt} -->
+
+<br>
+
+```{r reference, child="/home/rstudio/NuisanceStudy/whole_paper/reference.Rmd", eval=TRUE}
+
+```
+
+<!-- \endgroup -->
+
+\newpage
+
+# 脚注
+
+<br>
+
+1.  （著者情報を含むため削除）
+2.  （著者情報を含むため削除）
+3.  分析結果の一部は，J-STAGEの電子付録に記載した。また，データおよび分析コードを「公開用リポジトリ（採択後公開）」に公開している。
+4.  （著者情報を含むため削除）
+5.  研究2の予備的研究の内容は電子付録に記載した。
+6.  実験で使用した各シナリオの内容は，電子付録に記載した。
+7.  本研究の分散分析にはanovakun関数version4.8.6 [@iseki2021anovakun486] を使用した。
+
+\newpage
+
+\newgeometry{left = 3cm, right = 3cm, top = 3cm, bottom = 3cm}
+
+# 表
+
+<br>
+
+```{r call-sum-table-s1, child="/home/rstudio/NuisanceStudy/study1/output/study1_table1.Rmd"}
+
+```
+
+\newpage
+
+```{r call-sum-table-s3, child="/home/rstudio/NuisanceStudy/study3/output/study3_table1.Rmd"}
+
+```
+
+\newpage
+
+# 図
+
+<br>
+
+```{r call-med-act-s3, child="/home/rstudio/NuisanceStudy/study3/output/study3_figure1.Rmd"}
+
+```
+

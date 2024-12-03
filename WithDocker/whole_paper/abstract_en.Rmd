@@ -1,0 +1,15 @@
+---
+title: "Abstract English"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+output:
+  bookdown::word_document2:
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/JJP_template.docx"
+  bookdown::html_document2: default
+suppress-bibliography: yes
+# bibliography: "/home/rstudio/NuisanceStudy/reference/references.bib"
+# csl: "/home/rstudio/NuisanceStudy/reference/apa.csl"
+---
+
+Nuisance-behavior evaluations are often negative, even when such behavior does not cause significant harm. However, factors contributing to these negative evaluations remain unclear. This study examined whether observers negatively evaluate actors who do not understand the potential harm resulting from their nuisance behavior. Study 1 demonstrated that individuals were perceived as cold and incompetent when they did not understand that nuisance behavior was harmful, even in the absence of such behavior. Study 2 replicated these findings and showed that regardless of engagement in nuisance acts, an agent who was unaware of the harm their acts might cause was blamed and socially distanced. These judgments were sequentially mediated by the perceived coldness of the agent and perceived future likelihood of engagement in nuisance. Moreover, unaware agents were associated with animals, which have low intellectual abilities. These results indicate that negative nuisance evaluations are driven primarily by the perpetrator’s unawareness of their impact on others, rather than by the harm caused by the behavior. 

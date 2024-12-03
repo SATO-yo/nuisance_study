@@ -1,0 +1,15 @@
+---
+title: "Abstract Japanese"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+output:
+  bookdown::word_document2:
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/JJP_template.docx"
+  bookdown::html_document2: default
+suppress-bibliography: yes
+# bibliography: "/home/rstudio/NuisanceStudy/reference/references.bib"
+# csl: "/home/rstudio/NuisanceStudy/reference/apa.csl"
+---
+
+迷惑行為は大きな実害を伴わなくとも否定的に評価されやすい。しかし迷惑行為が否定的評価を生む理由は，これまで十分に明らかにされてこなかった。この問題に対して本研究では，迷惑行為者が周囲に及ぼす自身の悪影響を理解していないことが，否定的評価の源泉であることを検討した。研究1では，たとえ迷惑行為をしなかったとしても，何が周囲への迷惑になるのかを理解していない人物に対して，人々は冷たく能力に欠けるという印象を形成することを示した。研究2では研究1の結果を再現することに加え，迷惑行為の有無にかかわらず迷惑を理解していない人物は冷たく，将来的に迷惑行為をしやすいと予測され，その予測の程度が強いほど社会的距離と非難が増大するという連続的な媒介効果が見られた。また，このような人物は知的能力の低い動物と結び付けられることが示された。これらの結果は，迷惑行為のもたらす害よりもむしろ，その行為者が周囲に迷惑をかけていると理解していないように見えることが，迷惑行為への否定的評価を生むことを示唆する。

@@ -1,0 +1,83 @@
+---
+title: "Nuisance study Supplemental material（J-STAGE電子付録希望ファイル）"
+output:
+  bookdown::word_document2: 
+    number_sections: false
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/document_template.docx"
+  bookdown::html_document2: default 
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+bibliography: "/home/rstudio/NuisanceStudy/reference/references.bib"
+csl: "/home/rstudio/NuisanceStudy/reference/apa.csl"
+---
+
+
+# 研究1付録
+
+<br>
+
+```{r child="/home/rstudio/NuisanceStudy/study1/paper/study1_appendix.Rmd"}
+
+```
+
+<br>
+
+# 研究2の予備的研究
+
+<br>
+
+```{r child="/home/rstudio/NuisanceStudy/study2/paper/study2_intro.Rmd"}
+
+```
+
+<br>
+
+## 方法
+
+```{r child="/home/rstudio/NuisanceStudy/study2/paper/study2_method.Rmd"}
+
+```
+
+<br>
+
+## 結果
+
+```{r child="/home/rstudio/NuisanceStudy/study2/paper/study2_result.Rmd", cache=TRUE}
+
+```
+
+<br>
+
+## 考察
+
+```{r child="/home/rstudio/NuisanceStudy/study2/paper/study2_discussion.Rmd"}
+
+```
+
+<br>
+
+# 研究2付録
+
+<br>
+
+```{r child="/home/rstudio/NuisanceStudy/study3/paper/study3_appendix.Rmd"}
+
+```
+
+\newpage
+
+# 実験に使用したシナリオ
+
+<br>
+
+```{r child="/home/rstudio/NuisanceStudy/whole_paper/vignettes.Rmd"}
+
+```
+
+
+\newpage
+
+# 引用文献
+
+<br>
