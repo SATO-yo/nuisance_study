@@ -1,0 +1,106 @@
+---
+title: "Study1 Table 1"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+output:
+  bookdown::word_document2:
+    # reference_docx: "/home/rstudio/NuisanceStudy/reference/document_template.docx"
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/JJP_template.docx"
+  bookdown::html_document2:
+suppress-bibliography: yes
+---
+
+```{r setup-s1-table1, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+source("/home/rstudio/NuisanceStudy/study1/.Rprofile", encoding = "utf-8")
+set.seed(123)
+```
+
+```{r make-sum-table-s1-1, message=FALSE, error=FALSE, warning=FALSE}
+dat_combined_nomiss %>%
+  dplyr::mutate(
+    condition = dplyr::case_when(
+      act == "DO" & Mental == "FS" ~ "dofs",
+      act == "DO" & Mental == "UF" ~ "douf",
+      act == "DO" & Mental == "NO" ~ "dono",
+      act == "DONT" & Mental == "FS" ~ "dontfs",
+      act == "DONT" & Mental == "UF" ~ "dontuf",
+      act == "DONT" & Mental == "NO" ~ "dontno"
+    ),
+    condition = factor(condition, levels = c("dofs", "douf", "dono", "dontfs", "dontuf", "dontno"))
+  ) %>% 
+  dplyr::select(condition, MCfs, cold, incomp) %>%
+  dplyr::rename(
+    理解の程度 = MCfs,
+    冷たさ = cold,
+    能力の低さ = incomp
+  ) %>%
+  gtsummary::tbl_summary(
+    by = condition,
+    type = 理解の程度 ~ "continuous",
+    statistic = all_continuous() ~ "{mean} ({sd})"
+  ) %>% 
+  modify_footnote(update = everything() ~ NA) %>%
+  modify_header(
+    label = " ",
+    stat_1 ~ "dofs",
+    stat_2 ~ "douf",
+    stat_3 ~ "dono",
+    stat_4 ~ "dontfs",
+    stat_5 ~ "dontuf",
+    stat_6 ~ "dontno"
+  ) %>% 
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+    empty = "",
+    .after = dono
+  ) %>% 
+  flextable::flextable() %>%
+  flextable::colformat_num(digits = 2) %>%
+  flextable::set_caption("研究1の判断対象人物に対する条件ごとの判断結果") %>%
+  flextable::set_header_labels(
+    dofs = "理解あり",
+    douf = "理解なし",
+    dono = "情報なし",
+    empty = " ",
+    dontfs = "理解あり",
+    dontuf = "理解なし",
+    dontno = "情報なし"
+  ) %>%
+  flextable::add_header_row(
+    top = T,
+    values = c(" ", "実行", " ", "非実行"),
+    colwidths = c(1, 3, 1, 3)
+  ) %>%
+  flextable::align(i = 1:2, j = 1:8, align = "center", part = "header") %>%
+  flextable::align(j = 2:8, align = "center", part = "body") %>%
+  flextable::border_remove() %>%
+  flextable::hline_top(
+    part = "header",
+    border = officer::fp_border(width = 2)
+  ) %>%
+  flextable::hline(
+    part = "header",
+    i = 1,
+    j = c(2:4, 6:8),
+    border = officer::fp_border(width = 1)
+  ) %>% 
+  flextable::hline(
+    part = "header",
+    i = 2,
+    j = 1:8,
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::hline(
+    part = "body",
+    i = 3,
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::width(width = 1.25) %>%
+  flextable::width(j = 1, width = 1) %>%
+  flextable::width(j = 5, width = 0.1) %>% 
+  flextable::add_footer_lines(values = "注）数値は平均値（標準偏差）を表す。") %>%
+  flextable::font(fontname = "times new roman", part = "all")
+```
+

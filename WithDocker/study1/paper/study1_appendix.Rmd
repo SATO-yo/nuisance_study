@@ -1,0 +1,290 @@
+---
+title: "Study1 Appendix"
+output:
+  bookdown::word_document2: 
+    number_sections: false
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/document_template.docx"
+  bookdown::html_document2: default 
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+# bibliography: "/home/rstudio/NuisanceStudy/reference/references.bib"
+# csl: "/home/rstudio/NuisanceStudy/reference/apa.csl"
+---
+
+```{r setup-s1-ap, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(root.dir = "/home/rstudio/NuisanceStudy/study1/paper")
+source("/home/rstudio/NuisanceStudy/study1/.Rprofile", encoding = "utf-8")
+set.seed(123)
+```
+
+## 方法 {-}
+
+本研究で使用したQualtrics質問票は，以下のリンク先で確認できる。
+
+https://nagoyapsychology.qualtrics.com/jfe/form/SV_0oofH8wKS8OAK90
+
+<br>
+
+<!--
+```{r AboutData-s1-ap, include=FALSE, results='hide', eval=FALSE}
+dat_nomiss %>%
+  dplyr::filter(gender == "1" & act == "DO" & Mental == "FS" | gender == "1" & act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_male_participants
+
+dat_nomiss %>%
+  dplyr::filter(gender == "2" & act == "DO" & Mental == "FS" | gender == "2" & act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_female_participants
+
+dat_nomiss %>%
+  dplyr::filter(act == "DO" & Mental == "FS" | act == "DONT" & Mental == "FS") %>%
+  dplyr::select(age) %>%
+  {
+    colMeans(.) ->> mean_age
+    sqrt(var(.) * ((nrow(.) - 1) / nrow(.))) ->> sd_age
+  }
+```
+
+```{r prop_correct_answer_MCdo-s1-ap, include=FALSE, results='hide'}
+n_corr_DONT <-
+  dat_nomiss %>%
+  dplyr::filter(act == "DONT") %>%
+  nrow()
+n_corr_DO <-
+  dat_nomiss %>%
+  dplyr::filter(act == "DO") %>%
+  nrow()
+n_all_DONT <-
+  dat %>%
+  dplyr::filter(act == "DONT") %>%
+  nrow()
+n_all_DO <-
+  dat %>%
+  dplyr::filter(act == "DO") %>%
+  nrow()
+```
+
+
+**分析対象者の選定**　全参加者データのうち，同一IPアドレスからの3回目以降のデータは分析から除外した。また，質問の呈示方法の設定に誤りがあった7名を除外した。さらに，回答に欠損のあった1名を除外した。最後に，シナリオ内で判断対象人物が実際に迷惑行為を実行したかどうかの操作確認の質問に対して，一度でも不正確な回答をした参加者は分析から除外した。この操作確認の完全正答率は，迷惑行為実行条件で`r round(n_corr_DO/n_all_DO*100, 2)`％（`r n_corr_DO/3`/`r n_all_DO/3`名），非実行条件で`r round(n_corr_DONT/n_all_DONT*100, 2)`％（`r n_corr_DONT/3`/`r n_all_DONT/3`名）だった。-->
+
+```{r items-alpha-s1-ap, include=FALSE, results='hide'}
+alpha_dist <-
+  dat_nomiss %>% 
+  dplyr::select(dist1:dist3) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_emo <-
+  dat_nomiss %>% 
+  dplyr::select(emo1:emo6) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_beh <-
+  dat_nomiss %>% 
+  dplyr::select(beh1:beh4) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_disp <-
+  dat_nomiss %>% 
+  dplyr::select(disp1:disp9) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+```
+
+**探索的な測定項目**　判断対象人物との間に置きたいと思う社会的距離を示すために，参加者は3項目の内容を判断対象人物に対してどの程度思っているかを回答した（1 = 全くそう思わない，7 = 強くそう思う）。各項目はそれぞれ，「電車内でその人が隣に座ってきても嫌ではない」「知り合いだった場合，自分からこの人に挨拶する」「この人と目を合わせても平気だ」であった（$\alpha$ = `r alpha_dist`）。
+
+シナリオを読んで経験した嫌悪と軽蔑の強度を表すために，参加者はそれぞれの感情を表す項目が自身の感情状態に当てはまる程度を回答した。嫌悪の測定には，@murayama2015hisennmonnka を参考に「気持ちが悪い」「気分を害した」「強い嫌悪を感じた」を使用した。軽蔑の測定には，@futaki2016jittaisei を参考に，「軽蔑する」「蔑む」「情けないと思う」の3項目を使用した。実際の分析では主成分分析の結果に基づき，嫌悪と軽蔑を合成した不快感情の尺度として扱った（$\alpha$ = `r alpha_emo`）。
+
+判断対象人物の行動に関する評価として「不適切だ」「問題がある」「良くない」「迷惑な」がそれぞれ当てはまる程度を評定した（$\alpha$ = `r alpha_beh`）。これらに加え，判断対象人物に対する全般的な印象の悪さの評価として，「迷惑な」「うっとうしい」「うざったい」「粗雑な」「不注意な」「いい加減な」「乱暴な」「攻撃的な」「暴力的な」の9項目について，参加者はそれぞれが判断対象人物に当てはまる程度を回答した（$\alpha$ = `r alpha_disp`）。各回答は1（全く当てはまらい）から7（非常によく当てはまる）で行われた。
+
+<br>
+
+## 結果 {-}
+
+各条件における探索的な測定項目の平均値と標準偏差をTable S\@ref(tab:make-sum-table-s1-ap) に示した。また，迷惑への理解の条件ごとに，各従属変数の分布および変数間の相関をそれぞれ Figure S\@ref(fig:cor-fs-s1)，Figure S\@ref(fig:cor-uf-s1)，Figure S\@ref(fig:cor-no-s1) に示した。
+
+<br>
+
+```{r anova-s1-ap, include=FALSE, results='hide', cache=FALSE, eval=FALSE}
+anova_rep_s1_ap <-  
+  dat_combined_nomiss %>% 
+  anovakun_main(
+    id = "ID",
+    iv_b = "act", 
+    iv_w = "Mental", 
+    dv = c("dist","emo", "beh", "disp"),
+    design = "AsB",
+    fac_levels = c(2, 3),
+    eta_g = TRUE, 
+    eta_p = FALSE,
+    besci = TRUE,
+    nesci = TRUE,
+    intr1 = "act",
+    intr2 = "Mental"
+  )
+```
+
+```{r make-sum-table-s1-ap, cache=FALSE, warning=FALSE}
+dat_combined_nomiss %>% 
+  dplyr::mutate(
+    condition = dplyr::case_when(
+      act == "DO" & Mental == "FS" ~ "dofs",
+      act == "DO" & Mental == "UF" ~ "douf",
+      act == "DO" & Mental == "NO" ~ "dono",
+      act == "DONT" & Mental == "FS" ~ "dontfs",
+      act == "DONT" & Mental == "UF" ~ "dontuf",
+      act == "DONT" & Mental == "NO" ~ "dontno"
+    ),
+    condition = factor(condition, levels = c("dofs", "douf", "dono", "dontfs", "dontuf", "dontno"))
+  ) %>% 
+  dplyr::select(condition, dist, emo, beh, disp) %>%
+  dplyr::rename(
+    社会的距離 = dist,
+    不快感情 = emo,
+    行為の悪質度 = beh,
+    否定的特性 = disp
+  ) %>%
+  gtsummary::tbl_summary(
+    by = condition,
+    type = 社会的距離 ~ "continuous",
+    statistic = all_continuous() ~ "{mean} ({sd})"
+  ) %>% 
+  gtsummary::modify_footnote(update = everything() ~ NA) %>%
+  gtsummary::modify_header(
+    label = " ",
+    stat_1 ~ "dofs",
+    stat_2 ~ "douf",
+    stat_3 ~ "dono",
+    stat_4 ~ "dontfs",
+    stat_5 ~ "dontuf",
+    stat_6 ~ "dontno"
+  ) %>% 
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+    empty = "",
+    .after = dono
+  ) %>% 
+  flextable::flextable() %>%
+  flextable::colformat_num(digits = 2) %>%
+  flextable::set_caption("判断対象人物に対する条件ごとの判断結果") %>%
+  flextable::set_header_labels(
+    dofs = "理解あり",
+    douf = "理解なし",
+    dono = "情報なし",
+    empty = " ",
+    dontfs = "理解あり",
+    dontuf = "理解なし",
+    dontno = "情報なし"
+  ) %>%
+  flextable::add_header_row(
+    top = T,
+    values = c(" ", "実行", " ", "非実行"),
+    colwidths = c(1, 3, 1, 3)
+  ) %>%
+  flextable::align(i = 1:2, j = 1:8, align = "center", part = "header") %>%
+  flextable::align(j = 2:8, align = "center", part = "body") %>%
+  flextable::border_remove() %>%
+  flextable::hline_top(
+    part = "header",
+    border = officer::fp_border(width = 2)
+  ) %>%
+  flextable::hline(
+    part = "header",
+    i = 1,
+    j = c(2:4, 6:8),
+    border = officer::fp_border(width = 1)
+  ) %>% 
+  flextable::hline(
+    part = "header",
+    i = 2,
+    j = 1:8,
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::hline(
+    part = "body",
+    i = 4,
+    border = officer::fp_border(width = 1)
+  ) %>%
+  flextable::width(width = 0.9) %>%
+  flextable::width(j = 1, width = 1.15) %>%
+  flextable::width(j = 5, width = 0.1) %>% 
+  flextable::add_footer_lines(values = "注）数値は平均値（標準偏差）を表す。") %>%
+  flextable::font(fontname = "times new roman", part = "all")
+```
+
+
+```{r t-test-dist-s1, eval=FALSE}
+t_test_dist_dont <-
+  dat_combined_nomiss %>% 
+  dplyr::filter(act == "DONT" & Mental %in% c("FS", "UF")) %>% 
+  t.test(
+    dist ~ Mental, data = ., paired = TRUE, var.equal = FALSE, 
+    conf.level = (1-0.05)
+  ) %>% 
+  papaja::apa_print()
+```
+
+<br>
+
+無神経な人物に対する否定的な評価を探索的に検討するため，判断対象人物に対する社会的距離および否定的な感情，人物の行動の悪質さの評価，人物の特性に関する否定的評価を検討した。Table S\@ref(tab:make-sum-table-s1-ap) に示したように，これらの指標でも概ね冷たさの評価と同様の傾向が見られた。すなわち，判断対象人物が迷惑行為をしなければ，否定的評価全般を受けにくくなるが，この人物が無神経だった場合，否定的評価を免れにくかった。また，迷惑行為をしなかったとしても，その人物が迷惑を理解していないという情報が付与されることで，より否定的に評価された。これらのことからも，無神経であること自体が，その人物全般についての否定的評価を生むことが示された。
+
+```{r cor-fs-s1, fig.height=7, fig.width=7, message=FALSE, fig.cap="理解あり条件での各変数の得点の分布と変数間の相関"}
+dat_combined_nomiss %>% 
+  dplyr::filter(Mental == "FS") %>% 
+  dplyr::select(MCfs, cold, incomp, dist, emo, beh, disp) %>% 
+  dplyr::rename(
+    understanding = MCfs,
+    coldness = cold,
+    incompetence = incomp,
+    distance = dist,
+    'negative emotion' = emo,
+    badness = beh,
+    'negative trait' = disp
+  ) %>% 
+  GGally::ggpairs()
+```
+
+
+```{r cor-uf-s1, fig.height=7, fig.width=7, message=FALSE,  fig.cap="理解なし条件での各変数の得点の分布と変数間の相関"}
+dat_combined_nomiss %>% 
+  dplyr::filter(Mental == "UF") %>% 
+  dplyr::select(MCfs, cold, incomp, dist, emo, beh, disp) %>% 
+  dplyr::rename(
+    understanding = MCfs,
+    coldness = cold,
+    incompetence = incomp,
+    distance = dist,
+    'negative emotion' = emo,
+    badness = beh,
+    'negative trait' = disp
+  ) %>% 
+  GGally::ggpairs()
+```
+
+
+```{r cor-no-s1, fig.height=7, fig.width=7, message=FALSE,  fig.cap="情報なし条件での各変数の得点の分布と変数間の相関"}
+dat_combined_nomiss %>% 
+  dplyr::filter(Mental == "NO") %>% 
+  dplyr::select(MCfs, cold, incomp, dist, emo, beh, disp) %>% 
+  dplyr::rename(
+    understanding = MCfs,
+    coldness = cold,
+    incompetence = incomp,
+    distance = dist,
+    'negative emotion' = emo,
+    badness = beh,
+    'negative trait' = disp
+  ) %>% 
+  GGally::ggpairs()
+```

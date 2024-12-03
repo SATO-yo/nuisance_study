@@ -1,0 +1,136 @@
+---
+title: "Study1 Method"
+link-citations: yes
+editor_options:
+  chunk_output_type: console
+output:
+  bookdown::word_document2:
+    reference_docx: "/home/rstudio/NuisanceStudy/reference/document_template.docx"
+  bookdown::html_document2:
+suppress-bibliography: yes
+# bibliography: "/home/rstudio/NuisanceStudy/reference/references.bib"
+# csl: "/home/rstudio/NuisanceStudy/reference/apa.csl"
+---
+
+```{r setup-method-s1, include=FALSE, results='hide'}
+knitr::opts_knit$set(root.dir = "/home/rstudio/NuisanceStudy/study1/paper/")
+knitr::opts_chunk$set(echo = FALSE)
+source("/home/rstudio/NuisanceStudy/study1/.Rprofile", encoding = "utf-8")
+```
+
+```{r AboutData-s1-method, include=FALSE, results='hide'}
+dat_nomiss %>%
+  dplyr::filter(gender == "1" & act == "DO" & Mental == "FS" | gender == "1" & act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_male_participants
+
+dat_nomiss %>%
+  dplyr::filter(gender == "2" & act == "DO" & Mental == "FS" | gender == "2" & act == "DONT" & Mental == "FS") %>%
+  nrow() -> num_female_participants
+
+dat_nomiss %>%
+  dplyr::filter(act == "DO" & Mental == "FS" | act == "DONT" & Mental == "FS") %>%
+  dplyr::select(age) %>%
+  {
+    colMeans(.) ->> mean_age
+    sqrt(var(.) * ((nrow(.) - 1) / nrow(.))) ->> sd_age
+  }
+
+n_corr_DONT <-
+  dat_nomiss %>%
+  dplyr::filter(act == "DONT") %>%
+  nrow()
+n_corr_DO <-
+  dat_nomiss %>%
+  dplyr::filter(act == "DO") %>%
+  nrow()
+n_all_DONT <-
+  dat %>%
+  dplyr::filter(act == "DONT") %>%
+  nrow()
+n_all_DO <-
+  dat %>%
+  dplyr::filter(act == "DO") %>%
+  nrow()
+```
+
+**参加者**　クラウドソーシングサービスのLancers上で募集した，18歳以上の日本国籍保有者250名が同意の上で実験に参加した。このうち，`r num_male_participants+num_female_participants`名を分析に用いた（男性`r num_male_participants`名，女性`r num_female_participants`名）。平均年齢（標準偏差）は`r round(mean_age, 2)`歳（`r round(sd_age, 2)`）であった。全参加者データのうち，同一IPアドレスからの3回目以降のデータは分析から除外した。また，質問の呈示方法の設定に誤りがあった7名を除外した。さらに，回答に欠損のあった1名を除外した。最後に，シナリオ内で判断対象人物が実際に迷惑行為を実行したかどうかの操作確認の質問に対して，一度でも不正確な回答をした参加者は分析から除外した。この操作確認の完全正答率は，迷惑行為実行条件で`r round(n_corr_DO/n_all_DO*100, 2)`％（`r n_corr_DO/3`/`r n_all_DO/3`名），非実行条件で`r round(n_corr_DONT/n_all_DONT*100, 2)`％（`r n_corr_DONT/3`/`r n_all_DONT/3`名）だった。
+
+**手続き**　実験デザインは参加者間要因2水準×参加者内要因3水準であった。参加者間要因は，判断対象人物の迷惑行為実行の有無に関する操作であった。実行条件では，判断対象人物が迷惑行為を行い，迷惑を被った人が発生したというシナリオが3種類呈示された。非実行条件では，判断対象人物が迷惑行為に該当するような行動を中止し，その結果として誰も迷惑を被らなかったというシナリオが3種類呈示された。参加者内要因は，迷惑行為の影響に関する判断対象人物の理解についての3条件の操作であった。これらはそれぞれ，判断対象人物が自身の行動の結果を理解している条件（理解あり条件），理解していない条件（理解なし条件），統制条件として判断対象人物の心的状態に何も言及しない条件（情報なし条件）であった。情報なし条件を設定した目的は，迷惑行為をした人物の方がより否定的に評価されるという前提を確認するためである。
+
+各参加者は参加者内要因の操作によって3つの条件に割り当てられたが，これら3条件は3種の異なるシナリオ場面と組み合わされ，この組み合わせはラテン方格に従って行われた${}^6$。参加者は1つのシナリオを読むごとに操作確認の項目に回答し，続いてそのシナリオの内容に関する質問項目群に回答した。これを1セットとし，シナリオ3つ分の合計3セットを繰り返した。なお，操作確認の次に内容に関する質問群が呈示されるという順序は保ったまま，各項目の呈示順序はランダム化され，カウンターバランスがとられた。
+
+
+```{r cfa-Personality-s1, include=FALSE, results='hide'}
+model1_prsn <- "
+incomp =~ prsn7+prsn8+prsn9+prsn10+prsn11+prsn12+prsn13
+cold =~ prsn1+prsn2+prsn3+prsn4+prsn5+prsn6
+"
+cfa_prsn1 <-
+  dat_nomiss %>%
+  dplyr::select(
+    prsn1, prsn2, prsn3, prsn4, prsn5, prsn6, prsn7,
+    prsn8, prsn9, prsn10, prsn11, prsn12, prsn13
+  ) %>%
+  lavaan::cfa(
+    model = model1_prsn, 
+    data = ., 
+    std.lv = T, 
+    estimator = "ML"
+  )
+
+cfa_prsn1_result <- summary(cfa_prsn1, standardized = T, modindices = F)
+# cfa_prsn1_result
+fit_cfa_1 <-
+  lavaan::fitmeasures(cfa_prsn1, fit.measures = c(
+    "CFI", "TLI", "SRMR", "RMSEA.ci.lower",
+    "RMSEA", "rmsea.ci.upper", "AIC", "BIC"
+  ))
+
+model2_prsn <- "
+incomp =~ prsn7+prsn8+prsn9+prsn10+prsn11+prsn13
+cold =~ prsn1+prsn2+prsn3+prsn4+prsn5+prsn6
+"
+cfa_prsn2 <-
+  dat_nomiss %>%
+  dplyr::select(
+    prsn1, prsn2, prsn3, prsn4, prsn5, prsn6, prsn7,
+    prsn8, prsn9, prsn10, prsn11, prsn13
+  ) %>%
+  lavaan::cfa(
+    model = model2_prsn, 
+    data = ., 
+    std.lv = T, 
+    estimator = "ML"
+  )
+
+cfa_prsn2_result <- summary(cfa_prsn2, standardized = T, modindices = F)
+fit_cfa_2 <-
+  lavaan::fitmeasures(cfa_prsn2, fit.measures = c(
+    "CFI", "TLI", "SRMR", "RMSEA.ci.lower",
+    "RMSEA", "rmsea.ci.upper", "AIC", "BIC"
+  ))
+```
+
+```{r items-alpha-s1, include=FALSE, results='hide'}
+alpha_cold <- 
+  dat_nomiss %>% 
+  dplyr::select(prsn1, prsn2, prsn3, prsn4, prsn5, prsn6) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+
+alpha_incomp <-
+  dat_nomiss %>% 
+  dplyr::select(prsn7, prsn8, prsn9, prsn10, prsn11, prsn13) %>% 
+  psych::alpha() %>% 
+  .$total %>% 
+  .$raw_alpha %>% 
+  subnum(digits = 2, eql = FALSE)
+```
+
+**質問項目**　迷惑に関する理解の有無の操作確認として，参加者はシナリオ内の判断対象人物が，自身の行動がどのような結果につながるのかを正確に予想していたと思う程度を7件法で回答した（1 = 予想していなかった，4 = どちらともいえない，7 = 予想していた）。また，迷惑行為の実行の操作確認として，参加者はシナリオ内で迷惑行為として描写されている行動を判断対象人物が実際に実行したか否かを，「実行しなかった」「実行した」の2件法で回答した。
+
+また，判断対象人物への印象を測定するため，@hayashi1978twodimensions を援用し，判断対象人物の冷たさの指標として6項目（「良い－悪い」「つめたい－あたたかい」など），および能力の低さの指標として7項目の特性語の組み合わせを使用した（「たよりない－しっかりした」「知的でない－知的な」など）。これら13項目に関して確証的因子分析を行った結果，「能力の低さ」因子に対する「意思が弱い―意思が強い」の因子負荷量が `r subnum(cfa_prsn1_result$pe$std.all[6], digits = 2, eql = F)` と低かったため，この項目を除外した能力の低さ6項目（クロンバックの $\alpha$ = `r alpha_incomp`）と人物の冷たさ6項目（$\alpha$ = `r alpha_cold`）を尺度として用いた。参加者はそれぞれの対になった特性語のどちらが判断対象人物により当てはまるかを1から7で回答した。これら以外に，探索的な質問項目を設けた。探索的な質問項目の内容と，その分析結果については，電子付録に記載した。
+
+**倫理的配慮**　本研究は，著者らの所属する機関の研究倫理委員会の承認を得て実施された。
